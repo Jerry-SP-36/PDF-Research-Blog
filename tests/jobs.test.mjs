@@ -264,16 +264,12 @@ function pdfSearchConsent(job, id, params = {}) {
   return { id, method: 'mcpServer/elicitation/request', params: { threadId: job.threadId, serverName: 'cua_repl', message: 'Allow Computer Use to use "PDF Search"?', requestedSchema: { type: 'object', properties: {}, required: [] }, ...params } };
 }
 
-test('PDF Search consent first asks explicitly, then reuses only the accepted current-job scope', async t => {
+test('exact PDF Search consent is permanently auto-accepted without entering needs_input', async t => {
   const f = await setup(t), job = await f.queued(); job._rpc = new MockRpc(); job.threadId = 'consent-thread'; job.status = 'running';
   await f.manager.handleServerRequest(job, pdfSearchConsent(job, 100));
-  assert.equal(job._rpc.responses.length, 0); assert.equal(job._pdfSearchConsent, undefined);
-  assert.equal(job.status, 'needs_input');
-  assert.equal(job.pendingRequests[0].title, '允許本次研究使用 PDF Search');
-  assert.match(job.pendingRequests[0].description, /本次研究/); assert.match(job.pendingRequests[0].description, /任務結束即失效/);
-  await f.manager.respond(job.id, { requestId: '100', decision: 'accept' });
-  assert.equal(job._pdfSearchConsent, true);
   assert.deepEqual(job._rpc.responses[0], { id: 100, result: { action: 'accept', content: {} } });
+  assert.equal(job.status, 'running'); assert.equal(job.pendingRequests.length, 0); assert.equal(job._pending.size, 0);
+  assert.match(job.events.at(-1).message, /永久設定允許/);
   await f.manager.handleServerRequest(job, pdfSearchConsent(job, 101));
   assert.deepEqual(job._rpc.responses[1], { id: 101, result: { action: 'accept', content: {} } });
   assert.equal(job.status, 'running'); assert.equal(job.pendingRequests.length, 0);
@@ -283,21 +279,8 @@ test('PDF Search consent first asks explicitly, then reuses only the accepted cu
   assert.equal(Object.hasOwn(saved, 'pdfSearchConsent'), false);
 });
 
-test('declining the first PDF Search request grants no reusable permission', async t => {
-  const f = await setup(t), job = await f.queued(); job._rpc = new MockRpc(); job.threadId = 'decline-thread'; job.status = 'running';
-  await f.manager.handleServerRequest(job, pdfSearchConsent(job, 110));
-  await f.manager.respond(job.id, { requestId: '110', decision: 'decline' });
-  assert.notEqual(job._pdfSearchConsent, true);
-  assert.deepEqual(job._rpc.responses[0], { id: 110, result: { action: 'decline', content: null } });
-  await f.manager.handleServerRequest(job, pdfSearchConsent(job, 111));
-  assert.equal(job._rpc.responses.length, 1);
-  assert.equal(job.pendingRequests[0].id, '111'); assert.equal(job.status, 'needs_input');
-});
-
-test('PDF Search consent does not cover different apps, servers, threads, methods, or nonempty/malformed schemas', async t => {
+test('permanent PDF Search permission does not cover different apps, servers, threads, methods, or schemas', async t => {
   const f = await setup(t), job = await f.queued(); job._rpc = new MockRpc(); job.threadId = 'scoped-thread'; job.status = 'running';
-  await f.manager.handleServerRequest(job, pdfSearchConsent(job, 120));
-  await f.manager.respond(job.id, { requestId: '120', decision: 'accept' });
   const cases = [
     ['other app', { message: 'Allow Computer Use to use "Safari"?' }],
     ['other server', { serverName: 'another_server' }],
@@ -312,7 +295,7 @@ test('PDF Search consent does not cover different apps, servers, threads, method
     ['required is object', { requestedSchema: { type: 'object', properties: {}, required: {} } }],
     ['missing schema', { requestedSchema: undefined }],
   ];
-  let id = 121;
+  let id = 120;
   for (const [label, params] of cases) {
     const count = job._rpc.responses.length;
     await f.manager.handleServerRequest(job, pdfSearchConsent(job, id, params));
@@ -333,21 +316,26 @@ test('PDF Search consent does not cover different apps, servers, threads, method
   assert.equal(job._rpc.responses.length, beforeUnknownThread); assert.equal(job.pendingRequests.at(-1).id, String(id));
 });
 
-test('PDF Search consent is not inherited by another job or restored after restart', async t => {
-  const f = await setup(t), first = await f.queued('First consent'); first._rpc = new MockRpc(); first.threadId = 'first-thread'; first.status = 'running';
+test('permanent PDF Search permission applies independently to every active job without saved grant state', async t => {
+  const f = await setup(t), first = await f.queued('First research'); first._rpc = new MockRpc(); first.threadId = 'first-thread'; first.status = 'running';
   await f.manager.handleServerRequest(first, pdfSearchConsent(first, 150));
-  await f.manager.respond(first.id, { requestId: '150', decision: 'accept' });
-  const second = await f.queued('Second consent'); second._rpc = new MockRpc(); second.threadId = 'second-thread'; second.status = 'running';
+  const second = await f.queued('Second research'); second._rpc = new MockRpc(); second.threadId = 'second-thread'; second.status = 'running';
   await f.manager.handleServerRequest(second, pdfSearchConsent(second, 151));
-  assert.equal(second._rpc.responses.length, 0); assert.notEqual(second._pdfSearchConsent, true); assert.equal(second.pendingRequests.length, 1);
+  assert.deepEqual(first._rpc.responses[0], { id: 150, result: { action: 'accept', content: {} } });
+  assert.deepEqual(second._rpc.responses[0], { id: 151, result: { action: 'accept', content: {} } });
+  assert.equal(first.pendingRequests.length, 0); assert.equal(second.pendingRequests.length, 0);
+  await f.manager.persist(first); await f.manager.persist(second);
+  for (const current of [first, second]) {
+    const saved = JSON.parse(await readFile(path.join(current.dir, 'job.json'), 'utf8'));
+    assert.equal(Object.hasOwn(saved, '_pdfSearchConsent'), false);
+  }
   const restored = new JobManager(f.config, { rpcFactory: () => { throw new Error('No automatic worker'); } });
   await restored.init();
-  assert.notEqual(restored.get(first.id)._pdfSearchConsent, true); assert.notEqual(restored.get(second.id)._pdfSearchConsent, true);
-  assert.equal(restored.get(first.id).status, 'interrupted');
+  assert.equal(restored.get(first.id).status, 'interrupted'); assert.equal(restored.get(second.id).status, 'interrupted');
 });
 
-test('expired or closed jobs cannot reuse PDF Search permission from a late server request', async t => {
-  const f = await setup(t), job = await f.queued(); job.threadId = 'expired-thread'; job._pdfSearchConsent = true;
+test('expired or closed jobs cannot auto-accept a late PDF Search request', async t => {
+  const f = await setup(t), job = await f.queued(); job.threadId = 'expired-thread';
   const scenarios = [
     { _cancelRequested: true }, { _runEnded: true }, { _transportFailed: true }, { closed: true }, { noRpc: true },
   ];
@@ -360,9 +348,9 @@ test('expired or closed jobs cannot reuse PDF Search permission from a late serv
   }
 });
 
-test('a late consent click during turn interruption cannot grant permission or revive a cancelled job', async t => {
+test('a late generic approval click during turn interruption cannot revive a cancelled job', async t => {
   const f = await setup(t), job = await f.queued(); job._rpc = new MockRpc(); job.threadId = 'cancel-consent'; job.turnId = 'cancel-turn'; job.status = 'running';
-  await f.manager.handleServerRequest(job, pdfSearchConsent(job, 170));
+  await f.manager.handleServerRequest(job, pdfSearchConsent(job, 170, { message: 'Allow Computer Use to use "Safari"?' }));
   let release;
   const interruptGate = new Promise(resolve => { release = resolve; });
   job._rpc.request = async () => { await interruptGate; return {}; };
@@ -370,7 +358,6 @@ test('a late consent click during turn interruption cannot grant permission or r
   try {
     assert.equal(job.status, 'cancelled');
     await assert.rejects(f.manager.respond(job.id, { requestId: '170', decision: 'accept' }), error => error.statusCode === 409);
-    assert.notEqual(job._pdfSearchConsent, true);
   } finally { release(); await cancelling; }
   assert.equal(job.status, 'cancelled'); assert.equal(job._pending.size, 0); assert.equal(job.pendingRequests.length, 0);
 });
@@ -429,7 +416,7 @@ test('waiting for user permission pauses the UI watchdog until the answer arrive
   const f=await setup(t),job=await f.queued();job._rpc=new MockRpc();job.threadId='thread-permission';let settled=false;job._settle=()=>{settled=true;};
   t.mock.timers.enable({apis:['setTimeout']});
   await f.manager.handleNotification(job,{method:'item/started',params:{item:{id:'permission-tool',type:'mcpToolCall',server:'cua_repl'}}});
-  await f.manager.handleServerRequest(job,{id:21,method:'mcpServer/elicitation/request',params:{threadId:job.threadId,serverName:'cua_repl',message:'Allow Computer Use to use "PDF Search"?',requestedSchema:{type:'object',properties:{}}}});
+  await f.manager.handleServerRequest(job,{id:21,method:'mcpServer/elicitation/request',params:{threadId:job.threadId,serverName:'cua_repl',message:'Allow Computer Use to use "Safari"?',requestedSchema:{type:'object',properties:{}}}});
   t.mock.timers.tick(180001);assert.equal(settled,false);assert.equal(job.status,'needs_input');
   await f.manager.respond(job.id,{requestId:'21',decision:'accept'});t.mock.timers.tick(180001);assert.equal(settled,true);
   t.mock.timers.reset();

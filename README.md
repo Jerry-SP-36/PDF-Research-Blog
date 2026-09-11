@@ -1,4 +1,4 @@
-# PDF Research 0.5.1
+# PDF Research 0.5.2
 
 輸入主題，由 Codex 操作 PDF Search，閱讀相關本地 PDF、核對畫面、擷取原圖，整理成繁體中文研究報告。
 
@@ -51,7 +51,7 @@
 - PDF Search 與 `~/.codex/skills/pdf-search-topic/SKILL.md`。
 - Codex workspace runtime 中的 Node.js 22+、Python/Pillow、Poppler。
 
-「研究環境已就緒」表示檔案、登入與工具載入檢查通過；實際 PDF Search 操作能力會在研究期間確認。第一次允許本次研究使用 PDF Search 後，相同範圍的操作會沿用至該任務結束。需要其他權限或關鍵資訊時，介面會顯示具體請求。
+「研究環境已就緒」表示檔案、登入與工具載入檢查通過。PDF Research 會自動允許目前研究執行緒透過 Computer Use 操作 PDF Search；這項永久設定只涵蓋訊息、工具、App、執行緒與空白授權表單完全相符的請求。需要操作其他 App、取得額外權限或補充關鍵資訊時，介面仍會顯示具體請求。
 
 目前允許的 PDF 根目錄：`~/Library/CloudStorage/OneDrive-個人/Reference`。只服務已被報告列出的 PDF 與圖檔，不提供任意檔案瀏覽。
 

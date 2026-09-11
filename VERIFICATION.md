@@ -1,5 +1,13 @@
 # PDF Research 驗證紀錄
 
+## v0.5.2 — 2026-09-11（台北）
+
+- PDF Research 會自動接受目前執行中研究由 `cua_repl` 發出的精確 PDF Search 空白授權表單。比對包含方法、server、目前 thread、完整訊息、object schema、零 properties 與零 required fields；不同 App、server、thread、方法、訊息、schema 或已結束任務仍進入既有人工核准流程。
+- 隔離 QA App 真實執行「FEC 技術定義」研究：連續 6 個 PDF Search 授權請求全數自動接受，沒有進入 `needs_input`、待處理請求維持 0；第一個 Computer Use 呼叫完成後才由測試端取消任務。App 介面逐項讀回自動允許事件。
+- 完整測試 60 項通過，0 失敗／跳過；涵蓋每次自動接受、所有近似但不相符請求、跨任務套用、重啟資料邊界、已關閉任務、取消競態，以及非 PDF Search 授權仍會暫停操作逾時計時器。
+- 正式 App 讀回「研究環境已就緒」、「PDF Search 已安裝；PDF Research 已設為自動允許操作」與 `v0.5.2`；五個既有正式研究仍可讀取。12 個執行資源與原始碼逐位元組一致。
+- ZIP 重新解壓後通過嚴格簽章驗證，SHA-256 為 `a03e7cc4da0ca130b7a4e1e8a11bcf7ffd7ff01a0a3872405f1d8a1000e84a86`。機器讀回見 [verification-v052.json](verification-v052.json)。
+
 ## v0.5.1 — 2026-09-11（台北）
 
 - 已移除依視窗寬度自動縮放。原生「顯示」選單提供 `Command +`、`Command -`、`Command 0`；範圍 70%–200%、每次 10%。Computer Use 實際讀回 100% → 110% → 100%，另將 QA App 設為 120%、結束後重開，選單仍讀回 120%；正式 App 以 `Command 0` 重設並讀回 100%。

@@ -1,0 +1,58 @@
+{
+  "version": "0.5.2",
+  "verifiedAt": "2026-09-11T22:44:46+08:00",
+  "permanentPdfSearchPermission": {
+    "behavior": "auto-accept",
+    "persistence": "source policy applied on every app launch and every active research job",
+    "exactMatch": {
+      "method": "mcpServer/elicitation/request",
+      "serverName": "cua_repl",
+      "message": "Allow Computer Use to use \"PDF Search\"?",
+      "threadId": "must equal the current active research thread",
+      "requestedSchema": "object with no properties and no required fields"
+    },
+    "excluded": [
+      "different app or message",
+      "different MCP server",
+      "different or missing thread",
+      "different request method",
+      "nonempty, required, or malformed schema",
+      "cancelled, ended, failed, or closed jobs"
+    ],
+    "otherRequestsStillRequireUserDecision": true
+  },
+  "realQaRun": {
+    "bundleIdentifier": "local.sipitogether.pdf-research.qa052",
+    "topic": "FEC 技術定義",
+    "finalStatus": "cancelled after permission verification",
+    "pendingRequestsAfterPermission": 0,
+    "needsInputObserved": false,
+    "completedCuaCallsBeforeCancellation": 1,
+    "autoPermissionEvents": 6,
+    "eventReadback": "已依 PDF Research 的永久設定允許本次操作 PDF Search。"
+  },
+  "formalUiReadback": {
+    "environment": "研究環境已就緒",
+    "pdfSearch": "已安裝；PDF Research 已設為自動允許操作",
+    "version": "v0.5.2",
+    "historicalJobsPreserved": 5
+  },
+  "tests": {
+    "passed": 60,
+    "failed": 0,
+    "skipped": 0,
+    "includesLoopbackHttp": true
+  },
+  "bundle": {
+    "path": "../PDF Research.app",
+    "versionReadback": "0.5.2",
+    "resourceFilesCompared": 12,
+    "resourceMismatches": 0
+  },
+  "archive": {
+    "path": "../PDF Research.zip",
+    "bytes": 94571,
+    "sha256": "a03e7cc4da0ca130b7a4e1e8a11bcf7ffd7ff01a0a3872405f1d8a1000e84a86",
+    "unpackedStrictCodeSignatureVerified": true
+  }
+}
