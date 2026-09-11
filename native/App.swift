@@ -111,7 +111,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         return "\(url.scheme ?? "")://\(url.host ?? ""):\(url.port ?? 80)" == origin
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        guard isLocal(navigationAction.request.url) else { decisionHandler(.cancel); return }
+        guard isLocal(navigationAction.request.url) else {
+            if navigationAction.navigationType == .linkActivated, let url = navigationAction.request.url, url.scheme == "https" {
+                NSWorkspace.shared.open(url)
+            }
+            decisionHandler(.cancel); return
+        }
         if navigationAction.shouldPerformDownload { decisionHandler(.download) } else { decisionHandler(.allow) }
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {

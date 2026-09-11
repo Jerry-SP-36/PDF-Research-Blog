@@ -481,7 +481,7 @@
         : activeStatuses.has(job.status) ? "報告產出後，會在這裡呈現原始圖表、研究分析與來源連結。" : "請查看上方執行紀錄，確認本次研究的狀態。";
       return;
     }
-    const key = JSON.stringify([job.id, htmlURL, job.status, job.stats?.sources, job.stats?.figures]);
+    const key = JSON.stringify([job.id, htmlURL, job.status, job.stats?.sources, job.stats?.webSources, job.stats?.figures]);
     if (key === state.reportKey) return;
     state.reportKey = key;
     const requestId = ++state.reportRequest;
@@ -543,6 +543,7 @@
       $("job-status").textContent = "讀取中";
       $("job-status").className = "status-badge";
       $("job-date").textContent = "";
+      $("job-source-mode").textContent = "";
       renderJobModels(null);
       $("job-progress").hidden = true;
       $("pending-requests").hidden = true;
@@ -559,6 +560,8 @@
     $("job-status").textContent = statusLabels[job.status] || "狀態未確認";
     const created = formatDate(job.createdAt);
     $("job-date").textContent = created ? `建立於 ${created}` : "";
+    const reusedReadings = Number(job.readingMemory?.reused || 0);
+    $("job-source-mode").textContent = `${job.sourceMode === "pdf_web" ? "資料：本地 PDF ＋ 即時網路" : "資料：本地 PDF"}${reusedReadings ? ` · 先前相關閱讀 ${reusedReadings} 筆` : ""}`;
     renderJobModels(job);
     $("reuse-button").disabled = false;
     $("cancel-button").hidden = !activeStatuses.has(job.status);
@@ -569,8 +572,11 @@
     $("progress-indicator").className = `progress-indicator ${["partial", "needs_input"].includes(job.status) ? "is-attention" : job.status === "failed" ? "is-failed" : job.status === "completed" ? "is-completed" : activeStatuses.has(job.status) ? "is-running" : ""}`;
     const awaitingReport = activeStatuses.has(job.status) && !job.report?.available;
     $("source-stat").textContent = !awaitingReport && Number.isFinite(job.stats?.sources) ? String(job.stats.sources) : "—";
+    $("web-stat").textContent = !awaitingReport && Number.isFinite(job.stats?.webSources) ? String(job.stats.webSources) : "—";
+    $("reading-stat").textContent = Number.isFinite(job.readingMemory?.recorded) ? String(job.readingMemory.recorded) : "—";
     $("figure-stat").textContent = !awaitingReport && Number.isFinite(job.stats?.figures) ? String(job.stats.figures) : "—";
-    $("source-stat").title = $("figure-stat").title = awaitingReport ? "報告尚待整理與驗證" : "報告中經驗證的實際數量";
+    $("source-stat").title = $("web-stat").title = $("figure-stat").title = awaitingReport ? "報告尚待整理與驗證" : "報告中經驗證的實際數量";
+    $("reading-stat").title = `本次已保存 ${job.readingMemory?.recorded || 0} 筆按 PDF、頁碼與主題的閱讀記錄；開始時取用 ${reusedReadings} 筆相關記錄`;
     setError($("job-error"), typeof job.error === "string" ? job.error : job.error?.message || "");
     renderEvents(job);
     renderRequests(job);
@@ -693,6 +699,7 @@
     try {
       const result = await postJSON("/api/jobs", {
         topic, model: model.model, reasoningEffort: effort,
+        sourceMode: $("source-mode").value,
         sourceCount: $("source-count").value === "" ? null : Number($("source-count").value),
         figureTarget: $("figure-target").value === "" ? null : Number($("figure-target").value)
       });
@@ -799,6 +806,7 @@
       const value = state.job[key] === null ? "" : String(state.job[key]);
       if ([...$(field).options].some((option) => option.value === value)) $(field).value = value;
     }
+    if ([...$("source-mode").options].some((option) => option.value === state.job.sourceMode)) $("source-mode").value = state.job.sourceMode;
     renderStart();
     $("topic").focus();
     $("topic").scrollIntoView({ behavior: "smooth", block: "center" });

@@ -19,4 +19,5 @@
 @media(max-width:900px){.experience-fields{grid-template-columns:1fr}.experience-panel{padding:22px}.experience-review{grid-template-columns:1fr}}
 @media print{body{background:white}.app-header,.sidebar,.job-header,.progress-panel,.pending-requests,.report-toolbar,.connection-notice,.inline-error,.skip-link{display:none!important}.workspace{display:block;max-width:none;padding:0;margin:0}.panel{border:0;box-shadow:none}.report-content{padding:0;max-width:none;font-size:11pt}.report-content img,.report-content figure{break-inside:avoid}.report-content h1,.report-content h2,.report-content h3{break-after:avoid}.report-content table{display:table;font-size:9pt}.report-content pre{white-space:pre-wrap}.report-content a{color:inherit}.image-dialog{display:none!important}}
 
+.source-mode-option{margin-top:16px}.source-mode-option select{width:100%}
 @media print{.experience-panel{display:none!important}}

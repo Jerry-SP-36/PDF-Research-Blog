@@ -25,7 +25,7 @@
         <section class="new-research panel">
           <div class="section-eyebrow">開始探索</div>
           <h1>這次想研究什麼？</h1>
-          <p class="section-description">輸入問題，由 Codex 搜尋 PDF、閱讀內容，再整理成圖文報告。</p>
+          <p class="section-description">輸入問題，由 Codex 搜尋與閱讀 PDF；需要時可加入即時網路資料，再整理成圖文報告。</p>
           <form id="research-form">
             <label for="topic">研究主題 <span class="required-mark">必填</span></label>
             <textarea id="topic" name="topic" rows="5" maxlength="500" required placeholder="例如：224G 高速訊號中，via stub 對通道損耗的影響與設計建議"></textarea>
@@ -34,11 +34,12 @@
               <div><label for="reasoning-effort">推理深度</label><select id="reasoning-effort" name="reasoningEffort" aria-describedby="model-hint" disabled><option value="">模型預設</option></select></div>
             </div>
             <p id="model-hint" class="field-hint model-hint" aria-live="polite">正在向 Codex 取得可用模型…</p>
+            <div class="source-mode-option"><label for="source-mode">資料範圍</label><div class="select-wrap"><select id="source-mode" name="sourceMode"><option value="pdf" selected>本地 PDF</option><option value="pdf_web">本地 PDF ＋ 即時網路</option></select></div></div>
             <div class="form-options">
-              <div><label for="source-count">文件數量</label><div class="select-wrap"><select id="source-count" name="sourceCount"><option value="" selected>自動</option><option value="3">3 份 PDF</option><option value="4">4 份 PDF</option><option value="5">5 份 PDF</option><option value="6">6 份 PDF</option><option value="7">7 份 PDF</option><option value="8">8 份 PDF</option></select></div></div>
+              <div><label for="source-count">PDF 文件數量</label><div class="select-wrap"><select id="source-count" name="sourceCount"><option value="" selected>不限（依涵蓋度）</option><option value="3">3 份 PDF</option><option value="4">4 份 PDF</option><option value="5">5 份 PDF</option><option value="6">6 份 PDF</option><option value="7">7 份 PDF</option><option value="8">8 份 PDF</option></select></div></div>
               <div><label for="figure-target">圖表數量</label><div class="select-wrap"><select id="figure-target" name="figureTarget"><option value="" selected>自動</option><option value="4">4 張圖表</option><option value="5">5 張圖表</option><option value="6">6 張圖表</option><option value="7">7 張圖表</option><option value="8">8 張圖表</option><option value="9">9 張圖表</option><option value="10">10 張圖表</option><option value="11">11 張圖表</option><option value="12">12 張圖表</option><option value="13">13 張圖表</option><option value="14">14 張圖表</option><option value="15">15 張圖表</option><option value="16">16 張圖表</option></select></div></div>
             </div>
-            <p class="field-hint">自動依相關性與涵蓋度取捨，只收錄能支撐研究的文件與圖表。</p>
+            <p class="field-hint">建議保留「不限」：依問題涵蓋度選互補 PDF，達到內容飽和、來源用盡或 45 分鐘邊界便停止。需要固定時間或重現比較時，再選 3–8 份。</p>
             <button id="start-button" class="button button-primary start-button" type="submit" disabled><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.7"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>開始研究</span></button>
             <p id="start-hint" class="start-hint" aria-live="polite">正在檢查研究環境…</p>
             <p id="form-error" class="inline-error" role="alert" hidden></p>
@@ -58,7 +59,7 @@
           <div id="job-list" class="job-list"></div>
           <p id="history-error" class="inline-error" role="alert" hidden></p>
         </section>
-        <div class="sidebar-footer"><span class="footer-line"></span><p>PDF Search × Codex</p><span>以本機 PDF 為研究來源</span></div>
+        <div class="sidebar-footer"><span class="footer-line"></span><p>PDF Search × Codex</p><span>本機 PDF，可選即時網路補充</span></div>
       </aside>
 
       <main id="main-content" class="main-content" tabindex="-1">
@@ -70,10 +71,10 @@
         </section>
 
         <section id="job-view" class="job-view" aria-labelledby="job-title" hidden>
-          <header class="job-header"><div class="job-heading"><div class="job-kicker"><span class="section-eyebrow">研究任務</span><span id="job-status" class="status-badge"></span></div><h2 id="job-title"></h2><p id="job-date" class="job-date"></p><div id="job-models" class="job-models" hidden><p><span class="model-meta-label">選定模型</span><span id="job-requested-model"></span></p><p><span class="model-meta-label">實際模型</span><span id="job-actual-model"></span></p></div></div><div class="job-header-actions"><button id="reuse-button" class="button button-secondary" type="button">再次研究</button><button id="cancel-button" class="button button-cancel" type="button" hidden>取消研究</button></div></header>
+          <header class="job-header"><div class="job-heading"><div class="job-kicker"><span class="section-eyebrow">研究任務</span><span id="job-status" class="status-badge"></span></div><h2 id="job-title"></h2><p id="job-date" class="job-date"></p><p id="job-source-mode" class="job-date"></p><div id="job-models" class="job-models" hidden><p><span class="model-meta-label">選定模型</span><span id="job-requested-model"></span></p><p><span class="model-meta-label">實際模型</span><span id="job-actual-model"></span></p></div></div><div class="job-header-actions"><button id="reuse-button" class="button button-secondary" type="button">再次研究</button><button id="cancel-button" class="button button-cancel" type="button" hidden>取消研究</button></div></header>
           <p id="job-load-error" class="inline-error" role="alert" hidden></p>
           <section id="job-progress" class="progress-panel panel" aria-label="任務執行狀態">
-            <div class="progress-top"><div class="progress-indicator-wrap"><span id="progress-indicator" class="progress-indicator" aria-hidden="true"></span><div><p id="progress-label" class="progress-label" aria-live="polite"></p><p id="progress-detail" class="progress-detail"></p></div></div><div class="research-stats"><div><span id="source-stat">—</span><span>已驗證文件</span></div><div><span id="figure-stat">—</span><span>已驗證圖表</span></div></div></div>
+            <div class="progress-top"><div class="progress-indicator-wrap"><span id="progress-indicator" class="progress-indicator" aria-hidden="true"></span><div><p id="progress-label" class="progress-label" aria-live="polite"></p><p id="progress-detail" class="progress-detail"></p></div></div><div class="research-stats"><div><span id="source-stat">—</span><span>PDF</span></div><div><span id="web-stat">—</span><span>網頁</span></div><div><span id="reading-stat">—</span><span>閱讀記錄</span></div><div><span id="figure-stat">—</span><span>原圖</span></div></div></div>
             <p id="job-error" class="job-error" role="alert" hidden></p>
             <details id="events-details" class="events-details" open><summary><span>執行紀錄</span><span id="event-count" class="event-count"></span><svg class="chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m5 6 3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div id="event-list" class="event-list" role="log" aria-label="任務執行紀錄" aria-live="off"></div></details>
           </section>

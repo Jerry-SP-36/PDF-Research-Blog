@@ -37,7 +37,7 @@ test('valid report normalizes real paths, leaves input intact, and cites next to
   f.report.figures[0].path = 'report-assets/figure.png';
   const result = await validateReport(f.report, f.options);
   assert.equal(result.valid, true, result.errors.join('\n'));
-  assert.deepEqual(result.stats, { sources: 1, figures: 1 });
+  assert.deepEqual(result.stats, { sources: 1, webSources: 0, figures: 1 });
   assert.equal(result.report.completeness, 'complete');
   assert.equal(result.report.figures[0].path, f.image.replace(/^\/var\//, '/private/var/'));
   assert.equal(f.report.figures[0].path, 'report-assets/figure.png');
@@ -148,7 +148,7 @@ test('duplicate figures count once; uncited documents and unused images do not i
   f.report.sections[0].blocks.push({ type: 'figure', figureId: 'figure-b' });
   const result = await validateReport(f.report, { ...f.options, sourceTarget: 2, figureTarget: 2 });
   assert.equal(result.valid, true, result.errors.join('\n'));
-  assert.deepEqual(result.stats, { sources: 1, figures: 1 });
+  assert.deepEqual(result.stats, { sources: 1, webSources: 0, figures: 1 });
   assert.equal(result.report.completeness, 'partial');
   assert.ok(result.warnings.some(warning => warning.includes('duplicate image content')));
   assert.ok(result.warnings.some(warning => warning.includes('source is not cited')));
@@ -165,7 +165,7 @@ test('missing claim citations and unmet targets produce honest partial reports, 
   f.report.limitations = ['資料不足，尚無可用原圖。'];
   const result = await validateReport(f.report, { ...f.options, sourceTarget: 3, figureTarget: 8 });
   assert.equal(result.valid, true, result.errors.join('\n'));
-  assert.deepEqual(result.stats, { sources: 1, figures: 0 });
+  assert.deepEqual(result.stats, { sources: 1, webSources: 0, figures: 0 });
   assert.equal(result.report.completeness, 'partial');
   assert.ok(result.warnings.some(warning => warning.includes('claim has no citation')));
   assert.equal(result.report.figures.length, 0);
@@ -224,7 +224,7 @@ test('null targets validate automatic coverage without inheriting fixed 3-source
   for (const targets of [{ sourceTarget: null, figureTarget: null }, { sourceTarget: null, figureTarget: 1 }, { sourceTarget: 1, figureTarget: null }]) {
     const result = await validateReport(f.report, { ...f.options, ...targets });
     assert.equal(result.valid, true, result.errors.join('\n'));
-    assert.deepEqual(result.stats, { sources: 1, figures: 1 });
+    assert.deepEqual(result.stats, { sources: 1, webSources: 0, figures: 1 });
     assert.deepEqual(result.warnings, []);
     assert.equal(result.report.completeness, 'complete');
     assert.deepEqual(result.report.researchCoverage, f.report.researchCoverage);
@@ -287,7 +287,7 @@ test('automatic coverage needs at least one genuine cited source and one display
   f.report.researchCoverage = researchCoverage();
   f.report.figures = []; f.report.sections[0].blocks = f.report.sections[0].blocks.filter(block => block.type !== 'figure');
   const noFigure = await validateReport(f.report, options);
-  assert.equal(noFigure.valid, false); assert.deepEqual(noFigure.stats, { sources: 1, figures: 0 });
+  assert.equal(noFigure.valid, false); assert.deepEqual(noFigure.stats, { sources: 1, webSources: 0, figures: 0 });
   assert.ok(noFigure.errors.some(error => error.includes('at least one valid unique displayed figure')));
   f.report.summary[0].citations = [];
   for (const block of f.report.sections[0].blocks) {
@@ -329,4 +329,51 @@ test('coverage summary is escaped and automatic mode preserves citation/evidence
   f.report.evidence = [];
   result = await validateReport(f.report, options);
   assert.equal(result.valid, false); assert.ok(result.errors.some(error => error.includes('missing PDF Search screenshot evidence')));
+});
+
+test('mixed PDF and web reports keep source types, direct HTTPS links and separate counts', async t => {
+  const f = await fixture(t);
+  f.report.sources.push({
+    id: 'web-a', kind: 'web', title: 'Official <Status>',
+    url: 'https://standards.example.org/status?q=224G&view=full',
+    accessedAt: '2026-09-11T08:00:00+08:00', publishedAt: '2026-09-10', relationship: '近期狀態',
+  });
+  f.report.summary.push({ text: '官方頁面補充近期狀態。', citations: [{ sourceId: 'web-a' }] });
+  const result = await validateReport(f.report, { ...f.options, allowWebSources: true });
+  assert.equal(result.valid, true, result.errors.join('\n'));
+  assert.deepEqual(result.stats, { sources: 1, webSources: 1, figures: 1 });
+  assert.equal(result.report.sources[0].kind, 'pdf');
+  assert.equal(result.report.sources[1].accessedAt, '2026-09-11T00:00:00.000Z');
+  const markdown = renderMarkdown(result.report), html = renderHtml(result.report, { jobId: 'web-job' });
+  assert.match(markdown, /\[《Official \\<Status\\>》\]\(<https:\/\/standards\.example\.org\/status\?q=224G&view=full>\)/);
+  assert.match(markdown, /網頁，存取於 2026-09-11/);
+  assert.match(html, /href="https:\/\/standards\.example\.org\/status\?q=224G&amp;view=full"/);
+  assert.match(html, /rel="noopener noreferrer"/);
+  assert.doesNotMatch(html, /sources\/web-a/);
+});
+
+test('web sources are opt-in HTTPS evidence without PDF pages or figure authority', async t => {
+  const f = await fixture(t);
+  f.report.sources.push({ id: 'web-a', kind: 'web', title: 'Official status', url: 'https://example.org/status', accessedAt: '2026-09-11' });
+  f.report.summary.push({ text: 'Current status.', citations: [{ sourceId: 'web-a' }] });
+  const disabled = await validateReport(f.report, f.options);
+  assert.equal(disabled.valid, false);
+  assert.ok(disabled.errors.some(error => error.includes('web sources are not allowed')));
+
+  f.report.summary.at(-1).citations[0].pages = [1];
+  const fakePages = await validateReport(f.report, { ...f.options, allowWebSources: true });
+  assert.equal(fakePages.valid, false);
+  assert.ok(fakePages.errors.some(error => error.includes('web citations must not include PDF pages')));
+
+  delete f.report.summary.at(-1).citations[0].pages;
+  f.report.sources.at(-1).url = 'http://example.org/status';
+  const insecure = await validateReport(f.report, { ...f.options, allowWebSources: true });
+  assert.equal(insecure.valid, false);
+  assert.ok(insecure.errors.some(error => error.includes('must be an HTTPS URL')));
+
+  f.report.sources.at(-1).url = 'https://example.org/status';
+  f.report.figures[0].sourceId = 'web-a';
+  const webFigure = await validateReport(f.report, { ...f.options, allowWebSources: true });
+  assert.equal(webFigure.valid, false);
+  assert.ok(webFigure.errors.some(error => error.includes('cannot have PDF pages')));
 });

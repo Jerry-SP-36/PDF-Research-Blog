@@ -1,0 +1,125 @@
+{
+  "version": "0.6.0",
+  "verifiedAt": "2026-09-12T00:13:36+08:00",
+  "readingMemory": {
+    "identity": [
+      "canonical PDF SHA-256",
+      "verified page group"
+    ],
+    "storedFields": [
+      "PDF path, title, bytes, mtime, SHA-256 and page count",
+      "exact pages and page-specific topics",
+      "query, summary, findings and conditions",
+      "research topics and contributing job IDs"
+    ],
+    "reuseRules": [
+      "retrieve only topic-related records whose current PDF SHA-256 still matches",
+      "treat old records as navigation data rather than current-report evidence",
+      "search other sections when the current topic is not covered",
+      "reopen and screenshot every page cited by the current report",
+      "refresh queued jobs immediately before their worker starts"
+    ],
+    "reportBackfill": "one consolidated record per PDF page group with pdf-search-screenshot evidence; unobserved pagesRead are excluded",
+    "realQaRecord": {
+      "jobId": "20260911-c69301a7-21fe-411e-885f-4d305edd69cf",
+      "sourceTitle": "Next Generation CEI-448G Framework",
+      "sourcePath": "/Users/rfhsu/Library/CloudStorage/OneDrive-個人/Reference/Standard/OIF/CEI-448G/OIF-FD-CEI-448G-01.0.pdf",
+      "sourceSha256": "62f5484f622a6aa04958f42b15b096caf1d414c3d88b016eb6c389f92dc5f1c9",
+      "sourceBytes": 2287052,
+      "pages": [33, 34],
+      "topics": [
+        "224G FEC 定義",
+        "KP4 RS(544,514)",
+        "FEC 架構",
+        "post-FEC BER",
+        "Figure 8/9"
+      ],
+      "recordsSaved": 1
+    },
+    "pageCountIntegrationReadback": {
+      "pdfPages": 57,
+      "acceptedPages": [33, 34],
+      "outOfRangeRegressionTest": true
+    },
+    "relatedJobReadback": {
+      "jobId": "20260911-2052d1bc-7d1e-4e2d-8cdf-049557c9bb0e",
+      "topic": "224G FEC codeword latency 與 post-FEC BER 的工程取捨",
+      "reusedRecords": 1,
+      "persistedAcrossQaAppRebuildAndRestart": true
+    }
+  },
+  "webResearch": {
+    "uiModes": [
+      "pdf",
+      "pdf_web"
+    ],
+    "threadConfiguration": {
+      "pdf": "web_search=disabled",
+      "pdf_web": "web_search=live",
+      "turnShellNetworkAccess": false,
+      "externalConnectors": false
+    },
+    "realQa": [
+      {
+        "jobId": "20260911-c69301a7-21fe-411e-885f-4d305edd69cf",
+        "terminalWebSearchItemsObservedBeforeGateHardening": 4,
+        "openedPageUrls": 0,
+        "finalStatus": "cancelled before report"
+      },
+      {
+        "jobId": "20260911-2052d1bc-7d1e-4e2d-8cdf-049557c9bb0e",
+        "terminalWebSearchItemsObservedBeforeGateHardening": 2,
+        "openedPageUrls": 0,
+        "finalStatus": "cancelled before report"
+      }
+    ],
+    "finalPublicationGate": [
+      "at least one successful completed Web Search action",
+      "every cited web URL must match a successful openPage action from the current job",
+      "failed/error, findInPage and non-HTTPS actions cannot establish an opened source",
+      "web sources cannot provide PDF pages, figures or PDF source quota"
+    ]
+  },
+  "documentCount": {
+    "default": "unlimited by count; stop on supported saturation, source exhaustion or 45-minute boundary",
+    "recommended": "use unlimited for normal research; choose a fixed 3-8 PDFs for bounded time or reproducible comparisons"
+  },
+  "formalUiReadback": {
+    "environment": "研究環境已就緒",
+    "version": "v0.6.0",
+    "defaultSourceMode": "本地 PDF",
+    "documentCount": "不限（依涵蓋度）",
+    "webModeAvailable": "本地 PDF ＋ 即時網路",
+    "pageCountToolAvailable": true,
+    "historicalJobsPreserved": 5,
+    "leftOpenForUser": true
+  },
+  "tests": {
+    "passed": 72,
+    "failed": 0,
+    "skipped": 0,
+    "includesLoopbackHttp": true
+  },
+  "bundle": {
+    "path": "../PDF Research.app",
+    "versionReadback": "0.6.0",
+    "resourceFilesCompared": 13,
+    "resourceMismatches": 0,
+    "standardCodeSignatureVerified": true,
+    "strictCheckLimitation": "The workspace File Provider repeatedly reattaches empty FinderInfo to the in-place app; strict verification is therefore established on the clean unpacked ZIP copy."
+  },
+  "archive": {
+    "path": "../PDF Research.zip",
+    "bytes": 104270,
+    "sha256": "a9d637e362d82dcdae1ad05c97e8d1458a39fd02993382465e6b7d79e2da9621",
+    "unpackedVersionReadback": "0.6.0",
+    "unpackedResourceFilesCompared": 13,
+    "unpackedResourceMismatches": 0,
+    "unpackedStrictCodeSignatureVerified": true
+  },
+  "limitations": [
+    "The two v0.6 QA jobs were intentionally cancelled, so this release does not claim a newly completed end-to-end research report.",
+    "Live Web Search returned current official findings in QA, but no openPage URL or web-cited report was completed; exact opened-URL publication is covered by regression tests.",
+    "The same-PDF new-topic behavior is enforced by retrieval, prompt, queue-refresh and current-page evidence contracts; a full second agent research run after reuse was not completed."
+  ]
+}

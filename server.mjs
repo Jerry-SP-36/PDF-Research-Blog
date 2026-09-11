@@ -79,6 +79,7 @@ export async function createServer(config,{manager=new JobManager(config),token=
           const figure=match[2]==='figures';
           const record=(figure?job._report.figures:job._report.sources).find(x=>x.id===match[3]);
           if(!record) throw fail('找不到這個來源或圖片。',404);
+          if(!figure && record.kind==='web') throw fail('網頁來源請使用報告中的外部連結。',404);
           const file=await realpath(record.path);
           const roots=await Promise.all((figure?[path.join(job.dir,'report-assets')]:config.sourceRoots).map(p=>realpath(p)));
           if(!roots.some(root=>isInside(file,root))) throw fail('檔案超出此報告可讀取的範圍。',403);

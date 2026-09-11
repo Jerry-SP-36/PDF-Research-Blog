@@ -55,12 +55,13 @@ async function setup(t, { artifactVerifier = async () => ({ errors: [] }) } = {}
   const library = path.join(root, 'library'); await mkdir(library);
   const config = { version: 'test', codexPath: process.execPath, codexArgs: [], skillPath: path.join(root, 'SKILL.md'), pdfAppPath: root, pdfToolDir: root, pythonPath: process.execPath, sourceRoots: [library], dataDir: path.join(root, 'data'), appRoot: root, maxJobMinutes: 45 };
   const rpcs = [], manager = new JobManager(config, { rpcFactory: () => { const rpc = new MockRpc(rpcs.length); rpcs.push(rpc); return rpc; }, artifactVerifier });
+  manager.readingMemory.pageCounter = async () => 20;
   await manager.init();
   t.after(async () => { await manager.shutdown(); await until(() => !manager.draining, 'manager shutdown'); await Promise.all([...manager.jobs.values()].map(job => job._save)); await rm(root, { recursive: true, force: true }); });
-  async function queued(topic = '研究測試') {
+  async function queued(topic = '研究測試', overrides = {}) {
     // Hold the public queue only while adding inputs, then exercise the real drain/run implementation.
     manager.draining = true;
-    try { return manager.get((await manager.enqueue({ topic, sourceCount: 3, figureTarget: 4 })).id); }
+    try { return manager.get((await manager.enqueue({ topic, sourceCount: 3, figureTarget: 4, ...overrides })).id); }
     finally { manager.draining = false; }
   }
   async function report(job, title = 'Research report') {
@@ -86,8 +87,9 @@ async function setup(t, { artifactVerifier = async () => ({ errors: [] }) } = {}
 }
 
 test('request validation bounds the task without silently coercing counts', () => {
-  assert.deepEqual(cleanRequest({ topic: '  topic  ' }), { topic: 'topic', sourceCount: null, figureTarget: null, model:'gpt-5.6-luna',reasoningEffort:'high' });
-  for (const input of [{ topic: '' }, { topic: 'x', sourceCount: '3' }, { topic: 'x', sourceCount: 9 }, { topic: 'x', figureTarget: 17 }, { topic: 'x\0' }]) assert.throws(() => cleanRequest(input));
+  assert.deepEqual(cleanRequest({ topic: '  topic  ' }), { topic: 'topic', sourceCount: null, figureTarget: null, model:'gpt-5.6-luna',reasoningEffort:'high',sourceMode:'pdf' });
+  assert.equal(cleanRequest({ topic: 'x', sourceMode: 'pdf_web' }).sourceMode, 'pdf_web');
+  for (const input of [{ topic: '' }, { topic: 'x', sourceCount: '3' }, { topic: 'x', sourceCount: 9 }, { topic: 'x', figureTarget: 17 }, { topic: 'x', sourceMode: 'internet' }, { topic: 'x\0' }]) assert.throws(() => cleanRequest(input));
 });
 
 test('saved feedback is read back and frozen into the next related job instructions', async t => {
@@ -116,7 +118,7 @@ test('queue runs one RPC at a time, commits verified report, then handles a fail
   f.rpcs[0].notification('turn/completed', { threadId: first.threadId, turn: { id: first.turnId, status: 'completed' } });
   await until(() => second.turnId, 'second turn start');
   assert.equal(first.status, 'completed'); assert.equal(first.report.available, true); assert.equal(f.rpcs[0].closed, true);
-  assert.deepEqual(first.stats, { sources: 3, figures: 4 });
+  assert.deepEqual(first.stats, { sources: 3, webSources: 0, figures: 4 });
   const saved = JSON.parse(await readFile(path.join(first.dir, 'job.json'), 'utf8'));
   assert.equal(saved.status, 'completed'); assert.equal(saved.report.available, true);
   assert.match(await readFile(path.join(first.dir, 'report.html'), 'utf8'), /research-report/);
@@ -150,6 +152,7 @@ test('cancel interrupts the current turn, clears approvals, and leaves the job t
 test('restart preserves previous data and marks active or queued jobs interrupted without an automatic rerun', async t => {
   const f = await setup(t), first = await f.queued('was running'), second = await f.queued('was queued');
   first.status = 'running'; first.threadId = 'previous-thread'; await f.manager.persist(first);
+  second.readingMemoryApplied = { records: 2, staleCount: 1 }; await f.manager.persist(second);
   const restored = new JobManager(f.config, { rpcFactory: () => { throw new Error('Restart must not run a worker'); } });
   await restored.init();
   for (const id of [first.id, second.id]) {
@@ -157,6 +160,7 @@ test('restart preserves previous data and marks active or queued jobs interrupte
     assert.match(restored.get(id).error, /沒有自動重跑/);
     assert.equal(JSON.parse(await readFile(path.join(restored.get(id).dir, 'job.json'), 'utf8')).status, 'interrupted');
   }
+  assert.deepEqual(restored.publicJob(restored.get(second.id)).readingMemory, { recorded: 0, reused: 2, staleSkipped: 1 });
   assert.equal(restored.activeJobId, null); assert.equal(restored.jobs.size, 2);
   // Keep the first manager's cleanup from overwriting the restarted state.
   first.status = second.status = 'interrupted';
@@ -368,7 +372,7 @@ test('model selection rejects missing models and unsupported effort without subs
   assert.throws(()=>validateModel({model:'gpt-other',reasoningEffort:'high'},models),/無法選用/);
   assert.throws(()=>validateModel({model:'gpt-5.6-luna',reasoningEffort:'ultra'},models),/不支援/);
   assert.doesNotThrow(()=>validateModel({model:'gpt-5.6-luna',reasoningEffort:null},models));
-  assert.deepEqual(cleanRequest({topic:'x',sourceCount:null,figureTarget:8,reasoningEffort:null}),{topic:'x',sourceCount:null,figureTarget:8,model:'gpt-5.6-luna',reasoningEffort:null});
+  assert.deepEqual(cleanRequest({topic:'x',sourceCount:null,figureTarget:8,reasoningEffort:null}),{topic:'x',sourceCount:null,figureTarget:8,model:'gpt-5.6-luna',reasoningEffort:null,sourceMode:'pdf'});
 });
 test('live model catalog is paged and excludes models without vision', async()=>{
   let count=0;
@@ -420,4 +424,87 @@ test('waiting for user permission pauses the UI watchdog until the answer arrive
   t.mock.timers.tick(180001);assert.equal(settled,false);assert.equal(job.status,'needs_input');
   await f.manager.respond(job.id,{requestId:'21',decision:'accept'});t.mock.timers.tick(180001);assert.equal(settled,true);
   t.mock.timers.reset();
+});
+
+test('PDF-only and PDF-plus-web jobs set per-thread search mode while keeping shell network closed', async t => {
+  const f = await setup(t);
+  const pdf = await f.queued('PDF only', { sourceMode: 'pdf' }), firstDrain = f.manager.drain();
+  await until(() => pdf.turnId);
+  let start = f.rpcs[0].requests.find(call => call.method === 'thread/start');
+  let turn = f.rpcs[0].requests.find(call => call.method === 'turn/start');
+  assert.equal(start.params.config.web_search, 'disabled');
+  assert.equal(turn.params.sandboxPolicy.networkAccess, false);
+  await f.manager.cancel(pdf.id); await firstDrain;
+
+  const web = await f.queued('PDF with current standards status', { sourceMode: 'pdf_web' }), secondDrain = f.manager.drain();
+  await until(() => web.turnId);
+  start = f.rpcs[1].requests.find(call => call.method === 'thread/start');
+  turn = f.rpcs[1].requests.find(call => call.method === 'turn/start');
+  assert.equal(start.params.config.web_search, 'live');
+  assert.equal(turn.params.sandboxPolicy.networkAccess, false);
+  assert.match(start.params.developerInstructions, /研究開始時至少執行一次即時 Web Search/);
+  await f.manager.cancel(web.id); await secondDrain;
+});
+
+test('dynamic reading records are persisted by page and injected only as navigation context for a related job', async t => {
+  const f = await setup(t), job = await f.queued('224G FEC latency');
+  const pdf = path.join(f.config.sourceRoots[0], 'fec-latency.pdf');
+  await writeFile(pdf, '%PDF-1.7\n% FEC latency fixture\n%%EOF\n');
+  job._rpc = new MockRpc(); job.status = 'running'; job.threadId = 'reading-thread';
+  await f.manager.handleServerRequest(job, { id: 601, method: 'item/tool/call', params: { tool: 'research_record_reading', arguments: {
+    sourcePath: pdf, sourceTitle: 'FEC Latency', pages: [7, 8], topics: ['latency', 'codeword'],
+    query: '224G FEC latency', summary: 'Pages 7–8 explain codeword latency.',
+    findings: [{ text: 'Latency varies with codeword structure.', pages: [8], conditions: '224G link' }],
+  } } });
+  assert.equal(job._rpc.responses[0].result.success, true);
+  assert.equal(f.manager.publicJob(job).readingMemory.recorded, 1);
+  const next = await f.queued('224G FEC codeword latency tradeoff');
+  assert.equal(next.readingMemoryApplied.records, 1);
+  await f.manager.readingMemory.record({ id: 'later-job', topic: '224G FEC codeword latency tradeoff' }, {
+    sourcePath: pdf, sourceTitle: 'FEC Latency', pages: [9], topics: ['post-FEC BER'],
+    query: 'post-FEC BER', summary: 'Page 9 adds a later reading while the next task is queued.', findings: [],
+  }, [f.config.sourceRoots[0]]);
+  await f.manager.refreshReadingContext(next);
+  assert.equal(next.readingMemoryApplied.records, 2);
+  const workflow = await readFile(path.join(next.dir, 'work/workflow.txt'), 'utf8');
+  assert.match(workflow, /Pages 7–8 explain codeword latency/);
+  assert.match(workflow, /Page 9 adds a later reading/);
+  assert.match(workflow, /不代表整份文件已讀完/);
+  assert.match(workflow, /仍須本次重新在 PDF Search 翻頁/);
+});
+
+test('web report publication requires an observed live search and every cited page URL to be opened', async t => {
+  const f = await setup(t), url = 'https://standards.example.org/status';
+  const job = await f.queued('Current standard status', { sourceMode: 'pdf_web' });
+  const report = await f.report(job);
+  report.sources.push({ id: 'W1', kind: 'web', title: 'Official status', url, accessedAt: '2026-09-11T00:00:00Z' });
+  report.summary.push({ text: 'Current official status.', citations: [{ sourceId: 'W1' }] });
+  await writeFile(path.join(job.dir, 'report.json'), JSON.stringify(report));
+  job.runtimeEvidence = { cuaCalls: 3, screenshotCalls: 3, screenshotsSaved: 3, webSearchCalls: 0, webUrls: [] };
+  await f.manager.handleNotification(job, { method: 'item/completed', params: { item: { type: 'webSearch', status: 'completed', action: { type: 'search' }, query: 'current standard status' } } });
+  await f.manager.handleNotification(job, { method: 'item/completed', params: { item: { type: 'webSearch', status: 'completed', action: { type: 'openPage', url } } } });
+  let result = await f.manager.publish(job, path.join(job.dir, 'report.json'));
+  assert.equal(result.valid, true, result.errors?.join('\n'));
+  assert.deepEqual(result.stats, { sources: 3, webSources: 1, figures: 4 });
+
+  const unobserved = await f.queued('Unobserved web source', { sourceMode: 'pdf_web' });
+  const other = await f.report(unobserved);
+  other.sources.push({ id: 'W1', kind: 'web', title: 'Other page', url: 'https://example.org/other', accessedAt: '2026-09-11' });
+  other.summary.push({ text: 'Other claim.', citations: [{ sourceId: 'W1' }] });
+  await writeFile(path.join(unobserved.dir, 'report.json'), JSON.stringify(other));
+  unobserved.runtimeEvidence = { cuaCalls: 3, screenshotCalls: 3, screenshotsSaved: 3, webSearchCalls: 1, webUrls: [url] };
+  result = await f.manager.publish(unobserved, path.join(unobserved.dir, 'report.json'));
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(error => error.includes('沒有對應到本次 Web Search 實際開啟的 URL')));
+});
+
+test('completed web-search notifications retain only canonical HTTPS URLs', async t => {
+  const f = await setup(t), job = await f.queued('Web evidence', { sourceMode: 'pdf_web' });
+  await f.manager.handleNotification(job, { method: 'item/completed', params: { item: { type: 'webSearch', status: 'completed', action: { type: 'openPage', url: 'https://example.org/reference' } } } });
+  await f.manager.handleNotification(job, { method: 'item/completed', params: { item: { type: 'web_search_call', status: 'completed', action: { type: 'openPage', url: 'http://unsafe.example' } } } });
+  await f.manager.handleNotification(job, { method: 'item/completed', params: { item: { type: 'web_search_call', status: 'completed', action: { type: 'findInPage', url: 'https://example.org/second' } } } });
+  await f.manager.handleNotification(job, { method: 'item/completed', params: { item: { type: 'webSearch', status: 'failed', error: { message: 'offline' }, action: { type: 'openPage', url: 'https://example.org/failed' } } } });
+  assert.equal(job.runtimeEvidence.webSearchCalls, 3);
+  assert.deepEqual(job.runtimeEvidence.webUrls, ['https://example.org/reference']);
+  assert.equal((await readFile(path.join(job.dir, 'work/web-trace.jsonl'), 'utf8')).trim().split('\n').length, 4);
 });

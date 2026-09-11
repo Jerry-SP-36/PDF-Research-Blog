@@ -1,5 +1,16 @@
 # PDF Research 驗證紀錄
 
+## v0.6.0 — 2026-09-12（台北）
+
+- 新增 `reading-memory.json`：實際閱讀頁群保存 PDF SHA-256、真實頁數、頁碼、頁面主題、查詢、摘要、條件與發現。同一 PDF 內容與頁群會合併歷次主題及任務，不重複占滿取回額度；檔案雜湊改變的舊記錄不取用，失效高分記錄也不會擋住後續有效記錄。
+- 報告回填只保存帶 `pdf-search-screenshot` evidence 的頁，`pagesRead` 中未核對頁不會被標成已讀；超出 `pdfinfo` 真實頁數的動態記錄會被拒絕。排隊任務在真正開始前重新取回最新記錄。隔離 QA 真實保存《Next Generation CEI-448G Framework》p.33–34 與五個具體主題；第二個相關任務啟動時取用 1 筆，重建並重開 QA App 後仍讀回 1 筆。
+- UI 可選「本地 PDF」或「本地 PDF ＋ 即時網路」。後者只在該 thread 設 `web_search=live`，本機 shell 網路與外部 connectors 仍關閉。兩個 QA 任務分別收到 4 與 2 個 Web Search 結果事件，且產生官方近期資料，但都在開啟可引用頁面及完成報告前取消；因此不宣稱已有完整 Web 報告。最終 gate 只計成功的 completed 搜尋，且每個網頁引用必須匹配當次成功 `openPage` 的精確 HTTPS URL；失敗、錯誤、`findInPage` 或不安全 URL 不能通過。
+- PDF 文件數預設「不限（依涵蓋度）」並明示為一般研究建議；以問題支持度、內容飽和、來源用盡或 45 分鐘邊界停止。固定 3–8 份保留給控時或可重現比較。
+- 完整測試 72 項通過，0 失敗／跳過；包含閱讀記憶合併、SHA freshness、真實頁數邊界、只回填 evidence 頁、失效候選不阻塞、排隊刷新、重啟讀回、每任務 Web 模式、失敗 Web 事件與 exact opened URL，以及既有任務／HTTP／報告安全回歸。
+- 正式 App 讀回 `v0.6.0`、「研究環境已就緒」、PDF 頁碼工具、兩種資料範圍、預設不限與五個既有歷史任務。13 個執行資源與原始碼逐位元組一致；App 已留在畫面供使用。工作區 File Provider 會重新附加空 FinderInfo，因此原位 App 通過一般簽章驗證，乾淨 ZIP 解壓副本才作嚴格簽章驗證。
+- ZIP 為 104,270 bytes，SHA-256 `a9d637e362d82dcdae1ad05c97e8d1458a39fd02993382465e6b7d79e2da9621`；解壓後版本 0.6.0、13 個資源零差異並通過 `codesign --verify --deep --strict`。機器讀回見 [verification-v06.json](verification-v06.json)。
+- 本版尚未完成第二次「取用舊頁後仍為同 PDF 新主題另行搜尋」的完整 Agent 研究，也沒有完成含網頁引用的新報告；相關的非略過、重新翻頁與 exact-open 契約已有測試，這兩項仍保留為實跑限制。
+
 ## v0.5.2 — 2026-09-11（台北）
 
 - PDF Research 會自動接受目前執行中研究由 `cua_repl` 發出的精確 PDF Search 空白授權表單。比對包含方法、server、目前 thread、完整訊息、object schema、零 properties 與零 required fields；不同 App、server、thread、方法、訊息、schema 或已結束任務仍進入既有人工核准流程。
