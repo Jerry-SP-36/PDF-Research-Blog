@@ -18,10 +18,11 @@
   const effortLabels = { none: "無", minimal: "最低", low: "低", medium: "中", high: "高", xhigh: "更高", max: "最高", ultra: "極高" };
   const state = {
     environment: null, jobs: [], selectedJobId: null, job: null, displayJobId: null,
-    creating: false, cancelling: false, checking: false, refreshing: false,
+    creating: false, cancelling: false, checking: false, refreshing: false, savingFeedback: false,
     responding: new Set(), jobRequest: 0, reportRequest: 0, reportKey: "",
     historyKey: "", eventsKey: "", requestsKey: "", pollTimer: null, cycleRunning: false,
-    connectionError: "", model: "", reasoningEffort: null, modelInitialized: false, modelCatalogKey: ""
+    connectionError: "", model: "", reasoningEffort: null, modelInitialized: false, modelCatalogKey: "",
+    feedbackJobId: null, feedbackDirty: false
   };
 
   function setError(element, message) {
@@ -185,6 +186,37 @@
     } else {
       $("job-actual-model").textContent = job.model ? activeStatuses.has(job.status) ? "等待執行端回報" : "未記錄" : "當時預設（未記錄型號）";
     }
+  }
+
+  function fillExperienceFeedback(experience) {
+    $("experience-verdict").value = experience?.feedback?.verdict || "unreviewed";
+    $("experience-correct").value = experience?.feedback?.correct || "";
+    $("experience-mistakes").value = experience?.feedback?.mistakes || "";
+    $("experience-preferences").value = experience?.feedback?.preferences || "";
+  }
+
+  function renderExperience(job) {
+    const terminal = job && !activeStatuses.has(job.status);
+    $("experience-panel").hidden = !terminal;
+    if (!terminal) return;
+    if (state.feedbackJobId !== job.id) {
+      state.feedbackJobId = job.id;
+      state.feedbackDirty = false;
+      fillExperienceFeedback(job.experience);
+      $("experience-save-status").textContent = "";
+      setError($("experience-error"), "");
+    }
+    const system = job.experience?.system;
+    $("experience-system-status").textContent = system ? statusLabels[system.status] || system.status : "等待記錄";
+    $("experience-system-status").className = `experience-status ${system?.status || ""}`;
+    $("experience-system-summary").textContent = system?.summary || "系統正在整理這次研究的流程結果。";
+    const applied = job.experienceApplied || { preferences: 0, related: 0 };
+    const total = Number(applied.preferences || 0) + Number(applied.related || 0);
+    $("experience-applied").textContent = total
+      ? `本次研究開始時已取用 ${applied.preferences || 0} 則長期偏好、${applied.related || 0} 則相近經驗。`
+      : "本次研究開始時沒有可套用的既有經驗。你現在儲存的內容會從下一次研究開始使用。";
+    $("experience-save").disabled = state.savingFeedback;
+    $("experience-save").textContent = state.savingFeedback ? "正在儲存…" : "儲存並套用到未來研究";
   }
 
   function renderStart() {
@@ -514,6 +546,7 @@
       renderJobModels(null);
       $("job-progress").hidden = true;
       $("pending-requests").hidden = true;
+      $("experience-panel").hidden = true;
       $("cancel-button").hidden = true;
       $("reuse-button").disabled = true;
       $("report-placeholder-title").textContent = "正在讀取任務…";
@@ -541,6 +574,7 @@
     setError($("job-error"), typeof job.error === "string" ? job.error : job.error?.message || "");
     renderEvents(job);
     renderRequests(job);
+    renderExperience(job);
     void renderReport(job);
   }
 
@@ -768,6 +802,42 @@
     renderStart();
     $("topic").focus();
     $("topic").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  for (const id of ["experience-verdict", "experience-correct", "experience-mistakes", "experience-preferences"]) {
+    $(id).addEventListener("input", () => {
+      state.feedbackDirty = true;
+      $("experience-save-status").textContent = "尚未儲存";
+      setError($("experience-error"), "");
+    });
+  }
+
+  $("experience-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const id = state.selectedJobId;
+    if (!id || state.savingFeedback || !state.job || activeStatuses.has(state.job.status)) return;
+    state.savingFeedback = true;
+    setError($("experience-error"), "");
+    renderExperience(state.job);
+    try {
+      const result = await postJSON(`/api/jobs/${encodeURIComponent(id)}/feedback`, {
+        verdict: $("experience-verdict").value,
+        correct: $("experience-correct").value,
+        mistakes: $("experience-mistakes").value,
+        preferences: $("experience-preferences").value
+      });
+      if (!result.experience?.jobId || result.experience.jobId !== id) throw new Error("伺服器沒有讀回這次經驗。請重新整理後確認。");
+      if (state.job?.id === id) state.job.experience = result.experience;
+      state.feedbackDirty = false;
+      fillExperienceFeedback(result.experience);
+      $("experience-save-status").textContent = `已儲存 · ${formatDate(result.experience.updatedAt)}`;
+    } catch (error) {
+      setError($("experience-error"), messageOf(error));
+    } finally {
+      state.savingFeedback = false;
+      if (state.job?.id === id) renderExperience(state.job);
+      schedulePoll();
+    }
   });
 
   function showImage(img) {

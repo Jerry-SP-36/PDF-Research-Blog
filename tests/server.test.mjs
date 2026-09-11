@@ -69,7 +69,7 @@ async function fixture(t) {
   };
   const pendingJob = { id: 'pending-job', topic: 'Pending research', status: 'running', dir: jobDir, report: { available: false } };
   const jobs = new Map([[reportJob.id, reportJob], [pendingJob.id, pendingJob]]);
-  const calls = { init: 0, shutdown: 0, enqueue: [], preflight: 0 };
+  const calls = { init: 0, shutdown: 0, enqueue: [], preflight: 0, feedback: [] };
   const publicJob = (job) => ({ id: job.id, topic: job.topic, status: job.status, report: job.report });
   const status = { ready: true, checks: [], activeJobId: 'pending-job', version: 'test' };
   const manager = {
@@ -89,6 +89,12 @@ async function fixture(t) {
       const job = { id: `queued-${calls.enqueue.length}`, topic: body.topic, status: 'queued', report: { available: false } };
       jobs.set(job.id, job);
       return publicJob(job);
+    },
+    async saveFeedback(id, body) {
+      const job = this.get(id);
+      if (!['completed', 'partial', 'failed', 'cancelled', 'interrupted'].includes(job.status)) throw Object.assign(new Error('Research is still active'), { statusCode: 409 });
+      calls.feedback.push({ id, body });
+      return { id: `experience-${id}`, jobId: id, topic: job.topic, updatedAt: new Date().toISOString(), system: { status: job.status }, feedback: body };
     }
   };
   const service = await createServer({ appRoot, sourceRoots: [sourceRoot], port: 0 }, { manager, token: TOKEN });
@@ -176,6 +182,16 @@ test('local research HTTP server protects sessions, mutations and report file ac
     const preflight = await f.post('/api/preflight', {});
     assert.equal(preflight.status, 200);
     assert.equal(f.calls.preflight, 1);
+  });
+
+  await t.test('stores terminal research feedback through the guarded same-origin API', async () => {
+    const body = { correct: 'Keep the comparison.', mistakes: 'Wrong frequency range.', preferences: 'Always retain conditions.' };
+    const saved = await f.post('/api/jobs/report-job/feedback', body);
+    assert.equal(saved.status, 200);
+    assert.equal(JSON.parse(saved.text).experience.jobId, 'report-job');
+    assert.deepEqual(f.calls.feedback, [{ id: 'report-job', body }]);
+    assert.equal((await f.post('/api/jobs/pending-job/feedback', body)).status, 409);
+    assert.equal((await f.post('/api/jobs/report-job/feedback', body, { Origin: 'https://untrusted.example' })).status, 403);
   });
 
   await t.test('rejects non-JSON, invalid JSON and oversized job bodies without enqueueing', async () => {

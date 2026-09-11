@@ -79,6 +79,23 @@
           </section>
           <section id="pending-requests" class="pending-requests" aria-label="需要你的回覆" hidden></section>
 
+          <section id="experience-panel" class="experience-panel panel" aria-labelledby="experience-heading" hidden>
+            <header class="experience-header"><div><span class="section-eyebrow">本機偏好記憶</span><h3 id="experience-heading">把這次經驗帶到下次研究</h3></div><span id="experience-system-status" class="experience-status"></span></header>
+            <p id="experience-system-summary" class="experience-summary"></p>
+            <p id="experience-applied" class="experience-applied"></p>
+            <form id="experience-form">
+              <div class="experience-review"><label for="experience-verdict">技術內容判定</label><select id="experience-verdict"><option value="unreviewed">尚未人工判定</option><option value="correct">正確，可沿用做法</option><option value="partial">部分正確，需要修正</option><option value="incorrect">錯誤，不可沿用結論</option></select></div>
+              <div class="experience-fields">
+                <div><label for="experience-correct">做對／希望保留</label><textarea id="experience-correct" rows="3" maxlength="1600" placeholder="例如：比較表保留了頻率、損耗與量測條件，請維持這種寫法。"></textarea></div>
+                <div><label for="experience-mistakes">錯誤／下次要修正</label><textarea id="experience-mistakes" rows="3" maxlength="1600" placeholder="例如：第 3 個結論超出來源條件；下次必須限制在量測頻段內。"></textarea></div>
+                <div><label for="experience-preferences">我的長期偏好</label><textarea id="experience-preferences" rows="3" maxlength="1600" placeholder="例如：所有比較都保留協定、速率、距離、介質與成熟度。"></textarea></div>
+              </div>
+              <div class="experience-actions"><button id="experience-save" class="button button-primary" type="submit">儲存並套用到未來研究</button><span id="experience-save-status" role="status" aria-live="polite"></span></div>
+              <p id="experience-error" class="inline-error" role="alert" hidden></p>
+            </form>
+            <p class="experience-note">經驗檔只保存在這台 Mac；下一次執行時，相關回饋會隨研究提示送給 Codex。這是可檢視的本機偏好記憶，不會直接重新訓練基礎模型。</p>
+          </section>
+
           <section class="report-panel panel" aria-labelledby="report-heading"><header class="report-toolbar"><div><span class="report-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M5 2.5h7l3 3v12H5v-15Z" stroke="currentColor" stroke-width="1.4"/><path d="M8 9h4M8 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span><h3 id="report-heading">研究報告</h3></div><a id="download-report" class="button button-secondary button-small" href="#" download hidden><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v9m-3-3 3 3 3-3M4 13v4h12v-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>下載 Markdown</a></header>
             <div id="report-placeholder" class="report-placeholder"><span class="placeholder-symbol" aria-hidden="true">↗</span><h4 id="report-placeholder-title">正在整理研究內容</h4><p id="report-placeholder-description">報告產出後，會在這裡呈現原始圖表、研究分析與來源連結。</p></div>
             <p id="report-error" class="inline-error report-load-error" role="alert" hidden></p>

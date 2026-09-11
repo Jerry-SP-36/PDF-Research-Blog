@@ -90,6 +90,23 @@ test('request validation bounds the task without silently coercing counts', () =
   for (const input of [{ topic: '' }, { topic: 'x', sourceCount: '3' }, { topic: 'x', sourceCount: 9 }, { topic: 'x', figureTarget: 17 }, { topic: 'x\0' }]) assert.throws(() => cleanRequest(input));
 });
 
+test('saved feedback is read back and frozen into the next related job instructions', async t => {
+  const f = await setup(t), first = await f.queued('224G SerDes via stub');
+  first.status = 'completed'; first.report.available = true;
+  await f.manager.experiences.capture(first);
+  const feedback = await f.manager.saveFeedback(first.id, {
+    verdict: 'partial', correct: '保留損耗比較表。', mistakes: '不能把模擬當量測。', preferences: '保留速率、頻率、介質與距離。',
+  });
+  assert.equal(f.manager.publicJob(first).experience.feedback.preferences, feedback.feedback.preferences);
+  const next = await f.queued('224G via 的量測與模擬差異');
+  assert.deepEqual(next.experienceApplied, { preferences: 1, related: 1 });
+  const workflow = await readFile(path.join(next.dir, 'work', 'workflow.txt'), 'utf8');
+  assert.match(workflow, /保留速率、頻率、介質與距離/);
+  assert.match(workflow, /不能把模擬當量測/);
+  const persisted = JSON.parse(await readFile(path.join(next.dir, 'job.json'), 'utf8'));
+  assert.deepEqual(persisted.experienceApplied, { preferences: 1, related: 1 });
+});
+
 test('queue runs one RPC at a time, commits verified report, then handles a failed next turn', async t => {
   const f = await setup(t), first = await f.queued('First'), second = await f.queued('Second');
   const draining = f.manager.drain();

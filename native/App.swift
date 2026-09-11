@@ -1,7 +1,7 @@
 import Cocoa
 import WebKit
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
     var window: NSWindow!
     var webView: WKWebView!
     var backend: Process?
@@ -10,6 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var loaded = false
     var serviceOrigin: String?
     var childWindows: [NSWindow] = []
+    let zoomDefaultsKey = "pdfResearchPageZoom"
+    var pageZoom = 1.0
+    var zoomStatusItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let menu = NSMenu()
@@ -20,14 +23,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         for (name, action, key) in [("復原", "undo:", "z"), ("剪下", "cut:", "x"), ("複製", "copy:", "c"), ("貼上", "paste:", "v"), ("全選", "selectAll:", "a")] {
             editMenu.addItem(withTitle: name, action: Selector(action), keyEquivalent: key)
         }
+        let view = NSMenuItem(title: "顯示", action: nil, keyEquivalent: ""); menu.addItem(view); let viewMenu = NSMenu(title: "顯示"); view.submenu = viewMenu
+        let zoomInItem = viewMenu.addItem(withTitle: "放大", action: #selector(zoomIn(_:)), keyEquivalent: "+"); zoomInItem.target = self
+        let zoomOutItem = viewMenu.addItem(withTitle: "縮小", action: #selector(zoomOut(_:)), keyEquivalent: "-"); zoomOutItem.target = self
+        let resetZoomItem = viewMenu.addItem(withTitle: "實際大小", action: #selector(resetZoom(_:)), keyEquivalent: "0"); resetZoomItem.target = self
+        viewMenu.addItem(.separator())
+        let zoomStatus = NSMenuItem(title: "縮放：100%", action: nil, keyEquivalent: "")
+        zoomStatus.isEnabled = false; viewMenu.addItem(zoomStatus); zoomStatusItem = zoomStatus
         NSApp.mainMenu = menu
         let config = WKWebViewConfiguration()
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self; webView.uiDelegate = self
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1380, height: 920), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "PDF Research"; window.minSize = NSSize(width: 900, height: 650); window.delegate = self
+        window.title = "PDF Research"; window.minSize = NSSize(width: 900, height: 650)
         window.contentView = webView; window.center(); window.makeKeyAndOrderFront(nil)
-        updatePageZoom()
+        if UserDefaults.standard.object(forKey: zoomDefaultsKey) != nil {
+            pageZoom = min(2.0, max(0.7, UserDefaults.standard.double(forKey: zoomDefaultsKey)))
+        }
+        applyZoom(pageZoom, persist: false)
         NSApp.activate(ignoringOtherApps: true)
         webView.loadHTMLString("<meta charset='utf-8'><body style='font:18px system-ui;padding:60px;background:#f2f4f6;color:#23374b'><h1>PDF Research</h1><p>正在啟動本機研究工作台…</p></body>", baseURL: nil)
         startBackend()
@@ -81,15 +94,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func showError(_ message: String) {
         let alert = NSAlert(); alert.messageText = "PDF Research 啟動失敗"; alert.informativeText = message; alert.addButton(withTitle: "確定"); alert.runModal()
     }
-    func windowDidResize(_ notification: Notification) { updatePageZoom() }
-    func updatePageZoom() {
-        guard let window = window else { return }
-        // Keep controls and report text comfortably readable while preserving the
-        // responsive web layout at narrower window sizes.
-        let width = window.contentLayoutRect.width
-        let zoom = min(1.35, max(1.15, 1.15 + (width - 900) / 4_800))
-        if abs(webView.pageZoom - zoom) > 0.005 { webView.pageZoom = zoom }
+    func applyZoom(_ value: Double, persist: Bool = true) {
+        pageZoom = min(2.0, max(0.7, (value * 10).rounded() / 10))
+        webView?.pageZoom = pageZoom
+        zoomStatusItem?.title = "縮放：\(Int((pageZoom * 100).rounded()))%"
+        if persist { UserDefaults.standard.set(pageZoom, forKey: zoomDefaultsKey) }
     }
+    @objc func zoomIn(_ sender: Any?) { applyZoom(pageZoom + 0.1) }
+    @objc func zoomOut(_ sender: Any?) { applyZoom(pageZoom - 0.1) }
+    @objc func resetZoom(_ sender: Any?) { applyZoom(1.0) }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationWillTerminate(_ notification: Notification) { if backend?.isRunning == true { backend?.terminate() } }
 

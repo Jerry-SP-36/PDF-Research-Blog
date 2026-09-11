@@ -1,0 +1,63 @@
+{
+  "version": "0.5.1",
+  "verifiedAt": "2026-09-11T22:22:52+08:00",
+  "manualZoom": {
+    "rangePercent": [70, 200],
+    "stepPercent": 10,
+    "shortcuts": {
+      "zoomIn": "Command +",
+      "zoomOut": "Command -",
+      "reset": "Command 0"
+    },
+    "nativeUiReadback": [
+      "Command + changed the menu readback from 100% to 110%",
+      "Command - changed the menu readback from 110% to 100%",
+      "120% remained selected after quitting and reopening the QA bundle",
+      "Command 0 changed the formal bundle readback to 100%"
+    ],
+    "adaptiveWindowZoomRemoved": true
+  },
+  "researchExperience": {
+    "storage": "pdf-research-data/experiences.json",
+    "schemaVersion": 1,
+    "automaticTerminalStatuses": ["completed", "partial", "failed", "cancelled", "interrupted"],
+    "userVerdicts": ["unreviewed", "correct", "partial", "incorrect"],
+    "feedbackFields": ["correct", "mistakes", "preferences"],
+    "futureUse": {
+      "preferences": "latest cross-topic preferences",
+      "related": "topic-matched corrections, accepted practices, and process failures",
+      "boundary": "retrieved experience cannot replace current PDF evidence, permissions, or report validation"
+    },
+    "qaReadback": {
+      "systemStatus": "failed",
+      "uiSaveStatus": "已儲存",
+      "storedCorrect": "保留逐段來源與條件比較。",
+      "storedMistake": "引用頁碼錯配時不得標示完成。",
+      "storedPreference": "所有工程結論保留協定、速率、距離、介質與成熟度。"
+    },
+    "formalMigration": {
+      "historicalEntriesCaptured": 5,
+      "statuses": ["completed", "cancelled", "cancelled", "completed", "cancelled"],
+      "fileMode": "0600"
+    },
+    "baseModelFineTuned": false
+  },
+  "tests": {
+    "passed": 61,
+    "failed": 0,
+    "skipped": 0,
+    "includesLoopbackHttp": true
+  },
+  "bundle": {
+    "path": "../PDF Research.app",
+    "versionReadback": "0.5.1",
+    "resourceFilesCompared": 12,
+    "resourceMismatches": 0
+  },
+  "archive": {
+    "path": "../PDF Research.zip",
+    "bytes": 94644,
+    "sha256": "756a4315ade747aad8857ddbf52ff52af33a6d190853e2adc37a41f7e492b2e3",
+    "unpackedStrictCodeSignatureVerified": true
+  }
+}

@@ -59,8 +59,11 @@ export async function createServer(config,{manager=new JobManager(config),token=
         const body=await readBody(req);
         if(url.pathname==='/api/preflight'){json(200,await manager.preflight());return;}
         if(url.pathname==='/api/jobs'){json(201,{job:await manager.enqueue(body)});return;}
-        const match=/^\/api\/jobs\/([A-Za-z0-9-]+)\/(cancel|respond)$/.exec(url.pathname);
-        if(match){json(200,{job:match[2]==='cancel'?await manager.cancel(match[1]):await manager.respond(match[1],body)});return;}
+        const match=/^\/api\/jobs\/([A-Za-z0-9-]+)\/(cancel|respond|feedback)$/.exec(url.pathname);
+        if(match){
+          if(match[2]==='feedback'){json(200,{experience:await manager.saveFeedback(match[1],body)});return;}
+          json(200,{job:match[2]==='cancel'?await manager.cancel(match[1]):await manager.respond(match[1],body)});return;
+        }
       } else if(req.method==='GET'||req.method==='HEAD') {
         if(url.pathname==='/api/status'){json(200,manager.getStatus());return;}
         if(url.pathname==='/api/jobs'){json(200,{jobs:manager.list()});return;}
