@@ -1,0 +1,71 @@
+# PDF Research 0.5.0
+
+輸入主題，由 Codex 操作 PDF Search，閱讀相關本地 PDF、核對畫面、擷取原圖，整理成繁體中文研究報告。
+
+## 開始使用
+
+1. 開啟同一層的 **PDF Research.app**。
+2. 等待「研究環境已就緒」，輸入主題。
+3. 選擇 Codex 模型與思考深度，按「開始研究」。預設 GPT-5.6 Luna／high；文件與圖表預設「自動」，也能各自指定目標。
+4. 保持 App 開啟。研究時 PDF Search 會切換文件與頁面，請避免同時操作它。
+5. 在右側閱讀報告；點圖可放大，點引用可開啟本地 PDF。也可以下載 Markdown。
+
+介面會隨主視窗寬度自動調整為 115%–135%，視窗縮窄時再切換響應式版面，讓設定文字、進度與研究報告保持可讀。
+
+研究一次執行一個，新工作會排隊。可以取消；中斷時保留已蒐集資料，重新開啟不會自動重跑。指定數量未達或關鍵問題未解時會標記「部分完成」，不補造資料。
+
+自動模式依相關性、互補證據與關鍵問題涵蓋度繼續搜尋；沒有隱藏的 3 份／8 圖上限。搜尋不再增加實質內容、現有索引沒有更多相關資料，或需在時間上限內收尾時，記錄實際原因。更多篇數不一定代表更完整。
+
+模型清單即時讀取此帳號的 Codex catalog，只列可看圖片的模型。選擇的是目前可用 model ID；只有清單有提供的版本才能指定，不能保證固定到未提供的日期快照。任務會顯示選定與實際使用模型；不支援的模型／思考深度、模型被切換時會停止並回報，不自動升級 Astra。歷史任務未記錄模型時顯示「當時預設」。
+
+## 本版範圍
+
+- 僅以 PDF Search 既有索引與本地 PDF 為來源。
+- 分析段落、表格及圖片旁附文章標題、PDF 頁碼與來源連結。
+- 原圖穿插正文；逐頁蒐集紀錄留在工作資料，不列入研究報告。
+- 報告與圖檔保存在 App 同一層的 `pdf-research-data/jobs/`，在歷史清單可再次開啟。
+- 尚未加入網路蒐集與部落格草稿。
+
+原始 PDF、Obsidian、全域 Skills 與設定保持唯讀。App 透過目前已登入的 Codex 帳號工作，使用該帳號的模型與用量；分析所需的文字與畫面會由 Codex 傳給模型，本機介面不代表模型在本機執行。
+
+## 執行環境
+
+這是針對目前這台 Mac 打包的個人 App（macOS 13+），依賴已安裝的：
+
+- Codex／ChatGPT App 內建 Codex CLI，目前採 `/Applications/ChatGPT.app/Contents/Resources/codex`。
+- Codex 已登入、Computer Use 工具可用及必要的 macOS 操作權限。
+- PDF Search 與 `~/.codex/skills/pdf-search-topic/SKILL.md`。
+- Codex workspace runtime 中的 Node.js 22+、Python/Pillow、Poppler。
+
+「研究環境已就緒」表示檔案、登入與工具載入檢查通過；實際 PDF Search 操作能力會在研究期間確認。第一次允許本次研究使用 PDF Search 後，相同範圍的操作會沿用至該任務結束。需要其他權限或關鍵資訊時，介面會顯示具體請求。
+
+目前允許的 PDF 根目錄：`~/Library/CloudStorage/OneDrive-個人/Reference`。只服務已被報告列出的 PDF 與圖檔，不提供任意檔案瀏覽。
+
+## 開發與維護
+
+原始碼在此資料夾。無 npm 套件依賴。
+
+```sh
+node server.mjs
+node --test tests/*.test.mjs
+node build-app.mjs
+node package-app.mjs
+```
+
+第一個命令會輸出僅限本機的啟動網址。一般使用直接開啟 App 即可。
+
+`build-app.mjs` 重建同一層的 App，使用系統 Swift 編譯器並簽署本機 ad-hoc 簽章。請先結束 App 再重建。若需要自訂路徑，可在原始碼根目錄新增 `config.local.json`；打包版本則放在 `PDF Research.app/Contents/Resources/app/` 後重簽。不要把私密憑證放入設定。
+
+`package-app.mjs` 產生同一層的 `PDF Research.zip`，移除 File Provider 自動附加的 Finder 中繼資料，並解壓讀回驗證簽章。這是本機個人版封裝，依賴上述現有環境。
+
+## 驗證與限制
+
+本版以 Luna／high 實跑原來的 224G via stub 題目，流程完成，但人工內容驗收未通過：發現引用頁碼錯配、部分原圖不清楚及設計門檻適用條件不足。因此目前不能宣稱 Luna 已達到原 Astra 範例品質。詳細案例、已修正項目與下一步見 [Luna 實測與修正建議](EVALUATION.md)。介面的「研究完成」代表任務與自動檔案／結構檢查完成，不等於獨立技術審查通過。
+
+已包含任務生命週期、取消／斷線、HTTP 存取、來源與圖檔邊界、SHA-256 去重、引用與頁面關係、HTML escaping 等測試。報告提交時另外讀取 PDF 真實頁數、解碼圖檔，並把渲染結果寫入後讀回比對。
+
+App 記錄實際 Computer Use 操作與不重複的截圖結果。這能確認有操作與圖像證據，但逐頁畫面對應及技術解讀仍由研究 Agent 核對，不宣稱程式能自動證明每個結論正確。
+
+單次研究預設最多 45 分鐘。單次 Computer Use 操作超過 3 分鐘，或連續三次操作失敗，會停止並保留資料；不會自動強制結束 PDF Search。若 Codex 用量耗盡、PDF 不在允許的目錄、來源不足或操作權限失效，介面會保留具體狀態；不會把檢查成功視為研究完成。
+
+架構採 [Codex App Server](https://learn.chatgpt.com/docs/app-server) 的 stdio JSON-RPC，使用現有登入與工具；沒有另存 API key，也不修改全域 Codex 設定。

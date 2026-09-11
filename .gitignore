@@ -1,0 +1,7 @@
+.DS_Store
+config.local.json
+pdf-research-data/
+PDF Research.app/
+PDF Research.zip
+work/
+*.log

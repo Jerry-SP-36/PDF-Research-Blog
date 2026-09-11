@@ -1,0 +1,55 @@
+{
+  "verifiedAt": "2026-09-11T05:54:32Z",
+  "tests": {
+    "pass": 56,
+    "fail": 0
+  },
+  "bundleFiles": [
+    {
+      "file": "server.mjs",
+      "equal": true
+    },
+    {
+      "file": "package.json",
+      "equal": true
+    },
+    {
+      "file": "lib/artifact-check.py",
+      "equal": true
+    },
+    {
+      "file": "lib/codex-rpc.mjs",
+      "equal": true
+    },
+    {
+      "file": "lib/config.mjs",
+      "equal": true
+    },
+    {
+      "file": "lib/jobs.mjs",
+      "equal": true
+    },
+    {
+      "file": "lib/report.mjs",
+      "equal": true
+    },
+    {
+      "file": "lib/workflow.mjs",
+      "equal": true
+    },
+    {
+      "file": "web/app.js",
+      "equal": true
+    },
+    {
+      "file": "web/index.html",
+      "equal": true
+    },
+    {
+      "file": "web/styles.css",
+      "equal": true
+    }
+  ],
+  "baselineUnchanged": true,
+  "baselineFileCount": 10
+}
