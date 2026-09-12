@@ -68,6 +68,21 @@ test('validated reports remember only pages with PDF Search screenshot evidence'
   assert.doesNotMatch(saved[0].summary, /p\.12/);
 });
 
+test('validated reports store a concise page topic when the research topic exceeds 160 characters', async t => {
+  const f = await fixture(t);
+  const longTopic = '長'.repeat(161);
+  const saved = await f.store.captureReport({ id: 'job-long', topic: longTopic }, {
+    sources: [{ id: 'S1', kind: 'pdf', title: 'FEC Guide', path: f.pdf, pagesRead: [1] }],
+    summary: [{ text: 'Supported page.', citations: [{ sourceId: 'S1', pages: [1] }] }],
+    sections: [],
+    evidence: [{ sourceId: 'S1', page: 1, method: 'pdf-search-screenshot', note: 'Visible page' }],
+  }, [f.library]);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].topics[0].length, 160);
+  assert.match(saved[0].topics[0], /…$/);
+  assert.equal(saved[0].researchTopic, longTopic);
+});
+
 test('related topics reuse unchanged page records while changed PDFs are skipped as stale', async t => {
   const f = await fixture(t);
   await f.store.record(f.job, {
