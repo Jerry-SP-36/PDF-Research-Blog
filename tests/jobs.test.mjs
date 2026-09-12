@@ -89,7 +89,20 @@ async function setup(t, { artifactVerifier = async () => ({ errors: [] }) } = {}
 test('request validation bounds the task without silently coercing counts', () => {
   assert.deepEqual(cleanRequest({ topic: '  topic  ' }), { topic: 'topic', sourceCount: null, figureTarget: null, model:'gpt-5.6-luna',reasoningEffort:'high',sourceMode:'pdf' });
   assert.equal(cleanRequest({ topic: 'x', sourceMode: 'pdf_web' }).sourceMode, 'pdf_web');
-  for (const input of [{ topic: '' }, { topic: 'x', sourceCount: '3' }, { topic: 'x', sourceCount: 9 }, { topic: 'x', figureTarget: 17 }, { topic: 'x', sourceMode: 'internet' }, { topic: 'x\0' }]) assert.throws(() => cleanRequest(input));
+  assert.equal(cleanRequest({ topic: 'x', sourceCount: 10, figureTarget: null }).sourceCount, 10);
+  for (const input of [{ topic: '' }, { topic: 'x', sourceCount: '3' }, { topic: 'x', sourceCount: 11 }, { topic: 'x', figureTarget: 17 }, { topic: 'x', sourceMode: 'internet' }, { topic: 'x\0' }]) assert.throws(() => cleanRequest(input));
+});
+
+test('queue accepts ten active jobs and rejects an eleventh', async t => {
+  const f = await setup(t);
+  for (let index = 1; index <= 10; index++) {
+    const job = await f.queued(`Batch research ${index}`);
+    assert.equal(job.status, 'queued');
+  }
+  await assert.rejects(
+    () => f.manager.enqueue({ topic: 'Batch research 11', sourceCount: 3, figureTarget: 4 }),
+    /目前已有 10 個待處理研究/,
+  );
 });
 
 test('saved feedback is read back and frozen into the next related job instructions', async t => {

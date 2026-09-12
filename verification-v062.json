@@ -1,0 +1,125 @@
+{
+  "version": "0.6.2",
+  "dateTaipei": "2026-09-12",
+  "objective": "Support fixed ten-PDF research, unlimited figures by argument, and a ten-job batch queue",
+  "requestContract": {
+    "fixedPdfMinimum": 3,
+    "fixedPdfMaximum": 10,
+    "unlimitedFigureValue": null,
+    "unlimitedFigureLabel": "不限（依論點）",
+    "maximumActiveJobs": 10,
+    "eleventhActiveJob": "rejected with an explicit error"
+  },
+  "formalApp": {
+    "path": "/Users/rfhsu/Documents/Codex/2026-09-10/re/outputs/PDF Research.app",
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "machOMinimumVersions": [
+      "13.5",
+      "13.5"
+    ],
+    "bundleVersion": "0.6.2",
+    "minimumSystemVersion": "13.5",
+    "signatureAllArchitectures": true
+  },
+  "zipReadBackApp": {
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "machOMinimumVersions": [
+      "13.5",
+      "13.5"
+    ],
+    "bundleVersion": "0.6.2",
+    "minimumSystemVersion": "13.5",
+    "signatureAllArchitectures": true,
+    "strictSignature": true
+  },
+  "resourceParity": {
+    "expectedFiles": 13,
+    "formalFiles": 13,
+    "zipReadBackFiles": 13,
+    "formalSetMatches": true,
+    "zipReadBackSetMatches": true,
+    "formalContentMismatches": [],
+    "zipReadBackContentMismatches": []
+  },
+  "zip": {
+    "bytes": 135726,
+    "sha256": "7c153fa93e3aad07ba80391a62362bbfdcc1ffcabb8a2fe55d8674cd7de819bd"
+  },
+  "validation": {
+    "syntax": "pass",
+    "diffCheck": "pass",
+    "tests": {
+      "pass": 73,
+      "fail": 0,
+      "skipped": 0
+    },
+    "uiReadBack": {
+      "environmentReady": true,
+      "model": "gpt-5.6-luna",
+      "reasoningEffort": "high",
+      "sourceMode": "pdf",
+      "sourceCount": 10,
+      "figureTarget": null,
+      "figureLabel": "不限（依論點）"
+    }
+  },
+  "batchStartSnapshot": {
+    "capturedAt": "2026-09-12T10:50:00Z",
+    "uniqueTopics": 10,
+    "allJobFilesMatchRequestedParameters": true,
+    "parameters": {
+      "sourceCount": 10,
+      "figureTarget": null,
+      "model": "gpt-5.6-luna",
+      "reasoningEffort": "high",
+      "sourceMode": "pdf"
+    },
+    "firstFecJob": {
+      "id": "20260912-60aac3e9-5ef6-44b3-a042-9f94b731a71a",
+      "status": "failed after three PDF Search timeouts",
+      "successfulCuaCalls": 15,
+      "uniqueScreenshots": 10,
+      "readingRecordsSaved": 2
+    },
+    "recovery": {
+      "hungPdfSearchCpuPercentApproximate": 98,
+      "hungProcessTerminated": true,
+      "pdfSearchRelaunchedThroughCua": true,
+      "documentsVisible": 4924,
+      "documentsIndexed": 4835,
+      "subsequentPdfSearchCallsSucceeded": true
+    },
+    "viaAttempt": {
+      "id": "20260912-136399b0-c88f-45c5-ad2f-469a874e7797",
+      "status": "cancelled after App evidence remained unavailable",
+      "readingRecordsSaved": 0
+    },
+    "continuingJob": {
+      "id": "20260912-17871cf5-e710-43dd-b5a9-0b1e57c8fd0b",
+      "topicFamily": "interconnect resonance",
+      "statusAtSnapshot": "running",
+      "reusedReadingRecords": 2,
+      "successfulCuaCallsAtSnapshot": 50,
+      "uniqueScreenshotsAtSnapshot": 27
+    },
+    "completionClaim": "not claimed; this snapshot proves configuration, queuing, live PDF Search reading, recovery, and durable reading-memory writes"
+  },
+  "installedRuntime": {
+    "path": "/Users/rfhsu/My_Asset/APP/PDF Research.app",
+    "keptRunningToProtectQueuedJobs": true,
+    "resourceDifferenceFromFormalApp": [
+      "lib/jobs.mjs: running bundle has the previous eight-active-job limit"
+    ],
+    "restartDeferred": true
+  },
+  "scope": {
+    "contentQuality": "Each future report still requires its own source and technical review",
+    "distribution": "local ad-hoc signed personal app; not Developer ID notarized"
+  }
+}

@@ -1,5 +1,15 @@
 # PDF Research 驗證紀錄
 
+## v0.6.2 — 2026-09-12（台北）
+
+- 固定 PDF 數量由 3–8 擴充為 3–10，圖表預設值明示為「不限（依論點）」；`null` 仍是依論點取圖，不會回落成舊的固定八張。進行中與等待中的研究可同時保留 10 個，第 11 個會明確拒絕。
+- 完整測試 73 項通過、0 失敗／跳過；包含固定 10 份接受、11 份拒絕、10 個 active jobs 可排入與第 11 個拒絕。語法檢查與 `git diff --check` 通過。
+- 正式 App 與 ZIP 解壓副本均讀回版本 0.6.2、`x86_64 arm64`、兩個 slice `minos 13.5`、`LSMinimumSystemVersion 13.5` 與有效的 all-architectures 簽章；ZIP 解壓副本另通過 strict 驗證。13 個執行資源的檔名集合及 SHA-256 內容均與原始碼一致。
+- ZIP 為 135,726 bytes，SHA-256 `7c153fa93e3aad07ba80391a62362bbfdcc1ffcabb8a2fe55d8674cd7de819bd`。機器讀回見 [verification-v062.json](verification-v062.json)。
+- 已安裝 App 的 UI 真實讀回「研究環境已就緒」、Luna／high、本地 PDF、10 份 PDF 及「不限（依論點）」。介面建立十個不同 SI／PI 主題；十份任務檔都讀回 `sourceCount: 10`、`figureTarget: null`、Luna／high 與本地 PDF。
+- 第一個 FEC 任務曾完成 15 次 Computer Use、10 張 PDF Search 畫面核對並保存兩筆閱讀記憶；之後 PDF Search 程序異常佔用約 98% CPU，三次操作逾時而誠實失敗。正常終止該單一程序後，CUA 重開 PDF Search，讀回 4,924 份文件／4,835 份已索引，後續共振題重新取得頁面與截圖。via-stub 的失效嘗試在改採無 App 證據的輔助流程後由操作端取消，沒有把它算成有效暖機。
+- 為避免重啟將進行中與排隊任務標成 interrupted，已安裝且正在跑批次的 App 暫不覆寫；它和本版正式資源只差 active queue 上限仍為八。正式 App／ZIP 已包含十個 active jobs 的修正。批次研究是非同步長任務；上述證據只確認參數、排隊、真實 PDF Search 讀取及閱讀記憶落盤，不宣稱十題都已完成或通過技術審查。
+
 ## v0.6.1 — 2026-09-12（台北）
 
 - 原本的 Swift launcher 沒有指定 target，會繼承建置程序的主機架構與系統版本；這讓 Rosetta／Intel 環境可能產生 Intel-only App，且本機稽核時 Mach-O `minos 26.0` 與 Info.plist 宣告 13.0 不一致。
