@@ -1,0 +1,98 @@
+{
+  "version": "0.6.1",
+  "dateTaipei": "2026-09-12",
+  "objective": "Apple silicon native support with architecture-stable builds",
+  "preChangeRisk": {
+    "buildTargetWasImplicit": true,
+    "observedFormalArchitectureAtAudit": [
+      "arm64"
+    ],
+    "observedFormalMachOMinimumVersionAtAudit": [
+      "26.0"
+    ],
+    "declaredMinimumVersionAtAudit": "13.0"
+  },
+  "buildContract": {
+    "format": "Universal 2",
+    "architectures": [
+      "arm64",
+      "x86_64"
+    ],
+    "deploymentTarget": "13.5",
+    "actualValidationStages": [
+      "post-lipo build",
+      "signed formal app",
+      "clean staging app",
+      "ZIP read-back app"
+    ],
+    "validatedFields": [
+      "exact architecture set",
+      "Mach-O minos for each slice",
+      "LSMinimumSystemVersion",
+      "all-architectures code signature"
+    ]
+  },
+  "formalApp": {
+    "file": "/Users/rfhsu/Documents/Codex/2026-09-10/re/outputs/PDF Research.app/Contents/MacOS/PDFResearch: Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64:Mach-O 64-bit executable arm64]\n/Users/rfhsu/Documents/Codex/2026-09-10/re/outputs/PDF Research.app/Contents/MacOS/PDFResearch (for architecture x86_64):\tMach-O 64-bit executable x86_64\n/Users/rfhsu/Documents/Codex/2026-09-10/re/outputs/PDF Research.app/Contents/MacOS/PDFResearch (for architecture arm64):\tMach-O 64-bit executable arm64",
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "machOMinimumVersions": [
+      "13.5",
+      "13.5"
+    ],
+    "bundleVersion": "0.6.1",
+    "minimumSystemVersion": "13.5",
+    "signatureAllArchitectures": true,
+    "strictSignature": false
+  },
+  "zipReadBackApp": {
+    "file": "/tmp/pdf-research-v061-readback/PDF Research.app/Contents/MacOS/PDFResearch: Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64:Mach-O 64-bit executable arm64]\n/tmp/pdf-research-v061-readback/PDF Research.app/Contents/MacOS/PDFResearch (for architecture x86_64):\tMach-O 64-bit executable x86_64\n/tmp/pdf-research-v061-readback/PDF Research.app/Contents/MacOS/PDFResearch (for architecture arm64):\tMach-O 64-bit executable arm64",
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "machOMinimumVersions": [
+      "13.5",
+      "13.5"
+    ],
+    "bundleVersion": "0.6.1",
+    "minimumSystemVersion": "13.5",
+    "signatureAllArchitectures": true,
+    "strictSignature": true
+  },
+  "resourceParity": {
+    "expectedFiles": 13,
+    "formalFiles": 13,
+    "zipReadBackFiles": 13,
+    "formalSetMatches": true,
+    "zipReadBackSetMatches": true,
+    "formalContentMismatches": [],
+    "zipReadBackContentMismatches": []
+  },
+  "zip": {
+    "bytes": 135685,
+    "sha256": "48c362181198e215dfb4580a056f3aaa70af706355ef4bdb89ca4b12b31e0e21"
+  },
+  "validation": {
+    "syntaxAndDiffCheck": "pass",
+    "tests": {
+      "pass": 72,
+      "fail": 0
+    },
+    "uiLaunch": "blocked: CUA reported Mac locked on two retries after user said unlocked"
+  },
+  "scope": {
+    "appleSilicon": "verified arm64 Mach-O slice, minos and all-architectures signature on Apple M3 build host; UI read-back blocked by CUA lock state",
+    "intel": "launcher slice present; external x86_64 dependencies and Intel end-to-end flow not verified",
+    "distribution": "local ad-hoc signed personal app; not Developer ID notarized"
+  },
+  "runtimeDependency": {
+    "nodeArchitecture": [
+      "arm64"
+    ],
+    "nodeMachOMinimumVersion": "13.5",
+    "effect": "sets the verified personal-app minimum to macOS 13.5 and limits the current end-to-end scope to Apple silicon"
+  }
+}

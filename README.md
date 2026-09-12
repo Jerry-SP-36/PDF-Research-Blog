@@ -1,4 +1,4 @@
-# PDF Research 0.6.0
+# PDF Research 0.6.1
 
 輸入主題，由 Codex 操作 PDF Search，閱讀相關本地 PDF、核對畫面、擷取原圖，並可選擇以即時 Web Search 補充官方或近期資料，整理成繁體中文研究報告。
 
@@ -57,7 +57,7 @@ App 會把每次實際讀過的 PDF、檔案 SHA-256、當時頁數、頁碼、�
 
 ## 執行環境
 
-這是針對目前這台 Mac 打包的個人 App（macOS 13+），依賴已安裝的：
+這是針對目前這台 Apple silicon Mac 打包的個人 App（macOS 13.5+），依賴已安裝的：
 
 - Codex／ChatGPT App 內建 Codex CLI，目前採 `/Applications/ChatGPT.app/Contents/Resources/codex`。
 - Codex 已登入、Computer Use 工具可用及必要的 macOS 操作權限。
@@ -81,13 +81,13 @@ node package-app.mjs
 
 第一個命令會輸出僅限本機的啟動網址。一般使用直接開啟 App 即可。
 
-`build-app.mjs` 重建同一層的 App，使用系統 Swift 編譯器並簽署本機 ad-hoc 簽章。請先結束 App 再重建。若需要自訂路徑，可在原始碼根目錄新增 `config.local.json`；打包版本則放在 `PDF Research.app/Contents/Resources/app/` 後重簽。不要把私密憑證放入設定。
+`build-app.mjs` 重建同一層的 Universal 2 App，明確編譯 `arm64` 與 `x86_64` 兩個原生切片、合併後驗證架構與 macOS 13.5 deployment target，再簽署本機 ad-hoc 簽章。這可避免從 Rosetta 或不同主機重建時意外退回 Intel-only；目前工作流程使用的 Node runtime 最低版本也是 macOS 13.5。請先結束 App 再重建。若需要自訂路徑，可在原始碼根目錄新增 `config.local.json`；打包版本則放在 `PDF Research.app/Contents/Resources/app/` 後重簽。不要把私密憑證放入設定。
 
-`package-app.mjs` 產生同一層的 `PDF Research.zip`，移除 File Provider 自動附加的 Finder 中繼資料，並解壓讀回驗證簽章。這是本機個人版封裝，依賴上述現有環境。
+`package-app.mjs` 產生同一層的 `PDF Research.zip`，移除 File Provider 自動附加的 Finder 中繼資料，並在來源 App、封裝暫存與 ZIP 解壓讀回三個階段驗證 Universal 2、macOS 13.5 target 與簽章。這是本機個人版封裝，依賴上述現有環境。雖然 launcher 也包含 `x86_64` 切片，完整 Intel 流程仍需要另備相容的 Node、Codex、Python 與 Poppler，因此本版的實際驗收範圍是 Apple silicon。
 
 ## 驗證與限制
 
-先前 v0.2.0 曾以 Luna／high 實跑原來的 224G via stub 題目；流程完成，但人工內容驗收未通過：發現引用頁碼錯配、部分原圖不清楚及設計門檻適用條件不足。因此目前不能宣稱 Luna 已達到原 Astra 範例品質。v0.6.0 另以隔離 QA 任務驗證即時 Web Search 與閱讀記憶的保存／取回，但沒有再完成一份全新研究報告。詳細案例、已修正項目與下一步見 [Luna 實測與修正建議](EVALUATION.md)。介面的「研究完成」代表任務與自動檔案／結構檢查完成，不等於獨立技術審查通過。
+先前 v0.2.0 曾以 Luna／high 實跑原來的 224G via stub 題目；流程完成，但人工內容驗收未通過：發現引用頁碼錯配、部分原圖不清楚及設計門檻適用條件不足。因此目前不能宣稱 Luna 已達到原 Astra 範例品質。v0.6.0 另以隔離 QA 任務驗證即時 Web Search 與閱讀記憶的保存／取回，但沒有再完成一份全新研究報告；v0.6.1 只調整原生 App 的建置與封裝架構，不改研究流程。詳細案例、已修正項目與下一步見 [Luna 實測與修正建議](EVALUATION.md)。介面的「研究完成」代表任務與自動檔案／結構檢查完成，不等於獨立技術審查通過。
 
 已包含任務生命週期、取消／斷線、HTTP 存取、來源與圖檔邊界、SHA-256 去重、引用與頁面關係、HTML escaping 等測試。報告提交時另外讀取 PDF 真實頁數、解碼圖檔，並把渲染結果寫入後讀回比對。
 

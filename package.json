@@ -1,6 +1,6 @@
 {
   "name": "pdf-research-studio",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "type": "module",
   "description": "Local PDF Search research GUI powered by Codex App Server",
@@ -8,6 +8,6 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check server.mjs && node --check lib/jobs.mjs && node --check lib/experience.mjs && node --check lib/reading-memory.mjs && node --check lib/report.mjs && node --check lib/workflow.mjs && node --check web/app.js"
+    "check": "node --check server.mjs && node --check lib/jobs.mjs && node --check lib/experience.mjs && node --check lib/reading-memory.mjs && node --check lib/report.mjs && node --check lib/workflow.mjs && node --check web/app.js && node --check build-app.mjs && node --check package-app.mjs"
   }
 }

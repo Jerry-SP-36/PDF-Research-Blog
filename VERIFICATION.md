@@ -1,5 +1,15 @@
 # PDF Research 驗證紀錄
 
+## v0.6.1 — 2026-09-12（台北）
+
+- 原本的 Swift launcher 沒有指定 target，會繼承建置程序的主機架構與系統版本；這讓 Rosetta／Intel 環境可能產生 Intel-only App，且本機稽核時 Mach-O `minos 26.0` 與 Info.plist 宣告 13.0 不一致。
+- 建置改為分別編譯 `arm64-apple-macos13.5` 與 `x86_64-apple-macos13.5`，再以 `lipo` 合成 Universal 2。macOS 13.5 與目前外部 Node runtime 的最低版本一致；target 與 `LSMinimumSystemVersion` 由同一常數產生。
+- 建置與封裝會在 post-lipo、正式簽章、乾淨 staging 及 ZIP 解壓讀回階段檢查精確架構集合、兩個 Mach-O slice 的 `minos`、Info.plist 最低版本及 all-architectures 簽章；架構或版本漂移會直接使建置失敗。
+- 正式 App 與 ZIP 解壓副本均讀回 `x86_64 arm64`、兩個 slice `minos 13.5`、`LSMinimumSystemVersion 13.5` 與版本 0.6.1。解壓副本通過 `codesign --verify --all-architectures --deep --strict`；原位 App 仍受 File Provider FinderInfo 影響，只作非 strict 驗證。
+- 完整測試 72 項通過、0 失敗；語法檢查與 `git diff --check` 通過。正式 App 與 ZIP 解壓副本各有 13 個執行資源，檔名集合與 SHA-256 內容都和原始碼一致。
+- ZIP 為 135,685 bytes，SHA-256 `48c362181198e215dfb4580a056f3aaa70af706355ef4bdb89ca4b12b31e0e21`。機器讀回見 [verification-v061.json](verification-v061.json)。
+- 正式 UI 啟動驗收重試兩次，CUA 都回報 Mac 仍鎖定，因此未能讀回畫面，不能宣稱已由 UI 證明警告消失。Apple M3 上已完成原生 `arm64` Mach-O、雙 slice 版本與 all-architectures 簽章驗證。目前只驗收 Apple silicon；Universal launcher 雖包含 `x86_64`，外部 Node、Codex、Python 與 Poppler 的 Intel 版本及 Intel E2E 尚未驗證。本機 ad-hoc 簽章也不是 Developer ID 公開散佈流程。
+
 ## v0.6.0 — 2026-09-12（台北）
 
 - 新增 `reading-memory.json`：實際閱讀頁群保存 PDF SHA-256、真實頁數、頁碼、頁面主題、查詢、摘要、條件與發現。同一 PDF 內容與頁群會合併歷次主題及任務，不重複占滿取回額度；檔案雜湊改變的舊記錄不取用，失效高分記錄也不會擋住後續有效記錄。
